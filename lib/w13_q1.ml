@@ -165,7 +165,24 @@ let gen_random_rooted_graph n =
   ensure_reachability g n root;
   (root, g);;
   
+
+let gen_rnd_root_graphviz n =
+  let g = mk_graph() in
+  let node_root = gen_nodes n in
+  let nodes =  fst (node_root) in
+  let root = snd (node_root) in
+  let edges = gen_edges n in
+  addnodes nodes g;
+  addedges edges g;
+  ensure_reachability g n root;
+  let g' = to_adjacency_graph g in
+  let edges' = edges g' in
+  let len = Array.length edges' in
+  let edge_list = array_to_list 0 len edges' in
+  let weights = List.map (fun (x, y) -> (x, y, 1)) edge_list in
+  read_graph_and_payloads n nodes edge_list weights;;
   
+
   (*Helper functions for Tests*)
   
   open GraphBFS
