@@ -1,0 +1,8 @@
+(library
+ (name dsa_final)
+ (public_name dsa_final)
+  (wrapped false)
+  (inline_tests)                
+  (preprocess (pps ppx_inline_test ppx_expect))
+  (libraries ysc2229-part-one ysc2229-part-two core batteries ysc2229-geometry)
+  (synopsis "Final project for YSC2229"))
