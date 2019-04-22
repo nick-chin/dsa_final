@@ -73,16 +73,22 @@ let get_neighbours room p =
   let candidates = [Point (x +. 1., y); Point (x +. 1., y +. 1.); Point (x, y +. 1.); Point (x -. 1., y +. 1.); Point (x -. 1., y); Point (x -. 1., y -. 1.); Point (x, y -. 1.); Point (x +. 1., y -. 1.)] in
   let neighbours = List.filter (fun e -> square_inside_room room e) candidates in
   neighbours;;
+
+(* get the possible moves from a square p inside the room *)
+let get_next_moves room p =
+  let Point (x, y) = p in
+  let candidates = [Point (x +. 1., y); Point (x, y +. 1.); Point (x -. 1., y); Point (x, y -. 1.)] in
+  let next_moves = List.filter (fun e -> square_inside_room room e) candidates in
+  next_moves;;
   
 
 let get_watchman_path room =
-  let path = ref [Point (0., 0.)] in
-  let lighted_squares = ref [Point (0., 0.)] in
+  let p = Point (0., 0.) in
+  let path = ref [p] in
+  let lighted_squares = ref [p] in
   let all_squares = get_all_squares room in
-  let neighbours = [Point (1., 0.); Point (1., 1.); Point (0., 1.)] in
-  let rec loop ngbrs next =
-    match ngbrs with
-    | [] -> loop []
+  let neighbours = get_neighbours room p in
+  let rec loop ngbrs next = ()'
          
   
 (* 5. Visualization *)
