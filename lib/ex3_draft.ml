@@ -71,7 +71,7 @@ let get_all_squares room =
 let get_neighbours room p =
   let Point (x, y) = p in
   let candidates = [Point (x +. 1., y); Point (x +. 1., y +. 1.); Point (x, y +. 1.); Point (x -. 1., y +. 1.); Point (x -. 1., y); Point (x -. 1., y -. 1.); Point (x, y -. 1.); Point (x +. 1., y -. 1.)] in
-  let neighbours = List.map (fun e -> square_inside_room room e) candidates in
+  let neighbours = List.filter (fun e -> square_inside_room room e) candidates in
   neighbours;;
   
 
