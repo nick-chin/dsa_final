@@ -1,12 +1,15 @@
 open Week_01
 open Week_06
 open Week_13_Paths
+open Week_02
 
 open Week_12_Graphs
 open Week_13_Reachability
 open Week_12_BST
 open BinarySearchTree
+
 open LinkedGraphs
+
 
 module GraphBFS = struct
   open NodeTable
@@ -67,11 +70,45 @@ and the edge (u, v) are added to the tree.*)
           insert tree_map u (v :: siblings);
           enqueue q v;
           end
-        else if v_color = Gray
-        then has_cycles := true
-        else if v_color = Black
-        then has_cycles := true);
-      insert color_map u Black;
+        else if v_color = Gray then
+
+                  let existing_parent = get parent_map v in
+                  let new_proposed_parent = u in
+                  let current_distance = get_exn @@ get distance_map v;
+                  let new_proposed_distance = ((get_exn @@ get distance_map u) + Finite 1);
+                      if current_distance < new_proposed_distance then has_cycles := true;
+
+                      if (current_distance = new_proposed_distance) then
+                        let pred_gray = get parent_map v in
+                        let proposed_pred = u in
+                        let parent_pred_gray = ref (get parent pred_gray) in
+                        let parent_proposed_pred = ref (get parent proposed_pred) in
+                        while (parent_pred_gray !=  parent_proposed_pred) do
+                          parent_pred_gray := parent !parent_pred_gray;
+                          parent_proposed_pred := parent !parent_proposed_pred;
+                        done;
+                        insert parent_map v (Some !parent_proposed_pred);
+                        assert(!parent_pred_gray = ! parent_pred_gray);
+                        insert distance_map v ((get_exn @@ get distance_map !parent_proposed_pred) + Finite 1);
+                        let siblings = get_exn @@ get tree_map !parent_proposed_pred in
+                        insert tree_map !parent_proposed_pred (v :: siblings);
+                        let removed_siblings = get_exn @@ get tree_map existing_parent in
+                        insert tree_map u (List.filter (fun a -> a <> v) removed_siblings);
+                        has_cycles := true;
+
+
+                        else
+                          insert parent_map v (Some u);
+                          insert distance_map v ((get_exn @@ get distance_map u) + Finite 1);
+                          let siblings = get_exn @@ get tree_map u in
+                          insert tree_map u (v :: siblings);
+                          let removed_siblings = get_exn @@ get tree_map existing_parent in
+                          insert tree_map u (List.filter (fun a -> a <> v) removed_siblings);
+                          has_cycles := true;
+
+      else if v_color = Black
+      then has_cycles := true;
+      insert color_map u Black;)
    done in
 
 
@@ -85,7 +122,7 @@ and the edge (u, v) are added to the tree.*)
           helper g n
         end);
     (!roots, parent_map, distance_map, tree_map)
-    
+
     (* Visualise with BFS *)
 let graphviz_with_bfs g out =
 let (_, _, _, tree) = bfs g in
@@ -116,7 +153,7 @@ arr.(i) <- string_of_int(i);
 done;
 (arr, root);;
 
-let gen_edges n = 
+let gen_edges n =
   let size = Random.int (n* n) in
   let max = n - 1 in
   let gen_edges_helper size_list max_num  =
@@ -139,14 +176,14 @@ let addedges (lst: (int * int) array) g = let len = Array.length lst in
      add_edge g (fst (lst.(i))) (snd (lst.(i)));
      done
 
-let ensure_reachability graph n root = 
+let ensure_reachability graph n root =
   let max = n - 1 in
   let all_nodes = get_nodes graph in
   List.iter (fun x -> if x = root then () else
   (begin
     while not (is_reachable graph root x) do
       (*let an_edge = (Random.int max, Random.int max) in
-      add_edge graph (fst (an_edge)) (snd (an_edge));*) 
+      add_edge graph (fst (an_edge)) (snd (an_edge));*)
       let an_edge = (root, Random.int max) in
          add_edge graph (fst (an_edge)) (snd (an_edge));
          add_edge graph (snd (an_edge)) x;
@@ -164,7 +201,7 @@ let gen_random_rooted_graph n =
   addedges edges g;
   ensure_reachability g n root;
   (root, g);;
-  
+
 
 let gen_rnd_root_graphviz n =
   let g = mk_graph() in
@@ -175,18 +212,18 @@ let gen_rnd_root_graphviz n =
   addnodes nodes g;
   addedges edges g;
   ensure_reachability g n root;
+  let open AdjacencyGraphs in
   let g' = to_adjacency_graph g in
   let edges' = edges g' in
-  let len = Array.length edges' in
-  let edge_list = array_to_list 0 len edges' in
-  let weights = List.map (fun (x, y) -> (x, y, 1)) edge_list in
-  read_graph_and_payloads n nodes edge_list weights;;
-  
+  let weights = List.map (fun (x, y) -> (x, y, 1)) edges' in
+  Printf.printf "Root is %d" root;
+  read_graph_and_payloads n nodes edges' weights;;
+
 
   (*Helper functions for Tests*)
-  
+
   open GraphBFS
-  
+
   let is_reachable_via_bfs g init final =
   let (roots, _, _, tree) = bfs g in
   let rec walk n =
@@ -199,17 +236,17 @@ let gen_rnd_root_graphviz n =
   if List.mem init roots
   then walk init
   else false
-  
-  
-let equ list1 list2 = 
-  let rec as_mem l1 l2 = 
+
+
+let equ list1 list2 =
+  let rec as_mem l1 l2 =
   match l1 with
   | [] -> true
   | h :: t -> List.mem h l2 && as_mem t l2
   in
   List.length list1 = List.length list2 && as_mem list1 list2
-  
-  
+
+
   (*Test for bfs*)
 
 
@@ -231,13 +268,9 @@ let test_bfs g =
     List.for_all (fun u ->
         (List.exists (fun r -> is_reachable_via_bfs g r u) bfs_roots))
           all_nodes in
-          
-   (* Roots of the trees we obtain from DFS search and BFS search are the same*)      
+
+   (* Roots of the trees we obtain from DFS search and BFS search are the same*)
    let (dfs_roots, _, _, _) = GraphDFS.dfs g in
    let fact3 =  equ bfs_roots  dfs_roots in
 
   fact1 && fact2 && fact3
-
-
-
-
