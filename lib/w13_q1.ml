@@ -11,14 +11,14 @@ open BinarySearchTree
 open LinkedGraphs
 
 
-module GraphBFS = struct
+module GraphSentinel = struct
   open NodeTable
   open Distance
   open DLLBasedQueue
 
   type color = White | Gray | Black
 
-  let bfs ((root: int), g) =
+  let sentinel_tree ((root: int), g) =
 
     let color_map = mk_new_table (v_size g) in
     let parent_map = mk_new_table (v_size g) in
@@ -98,9 +98,35 @@ and the edge (u, v) are added to the tree.*)
      helper g root;
      (all_nodes, parent_map)
 
+  let visualize_sentinel_tree (nodes, p_map) =
+    let open LinkedGraphs in
+    let g = mk_graph () in
+    let rec add_nodes ls =
+      match ls with
+      | [] -> ()
+      | h :: t ->
+         add_node g h;
+         add_nodes t
+    in
+    let rec add_edges ls =
+      match ls with
+      | [] -> ()
+      | h :: t ->
+         let dst = get_exn @@ get_exn @@ get p_map h in
+         if dst = h
+         then ()
+         else add_edge g h dst;
+         add_edges t
+    in
+    add_nodes nodes;
+    add_edges nodes;
+    g
+     
 end
 
 
+
+                
 
 (*Procedure to generate random graph*)
 
