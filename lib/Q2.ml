@@ -27,8 +27,6 @@ module GraphSentinel = struct
 
     (* Make all nodes white *)
     List.iter  (fun n -> insert color_map n White) all_nodes;
-    (* Make all distances Infinity *)
-    List.iter  (fun n -> insert distance_map n Infinity) all_nodes;
     (*Make the parent of each node None*)
     List.iter  (fun n -> insert parent_map n None) all_nodes;
 
