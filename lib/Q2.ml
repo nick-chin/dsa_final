@@ -76,8 +76,13 @@ and the edge (u, v) are added to the tree.*)
           end
         else if v_color = Black
         then begin
-            let v' = ref (get parent_map v) in
+			let dist_v = int_of_distance @@ get_exn @@ get distance_map v in
+			let dist_u = int_of_distance @@ get_exn @@ get distance_map u in
+			let v' = ref (get parent_map v) in
             let u' = ref (get parent_map u) in
+			for _ = 1 to dist_u - dist_v do
+				u' := get parent_map (get_exn @@ get_exn !u')
+			done;
             while get_exn !v' <> get_exn !u' do
               if get_exn !v' = Some root
               then insert parent_map v (Some root)
