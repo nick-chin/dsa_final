@@ -18,7 +18,7 @@ module GraphBFS = struct
 
   type color = White | Gray | Black
 
-  let bfs (root, g) =
+  let bfs ((root: int), g) =
 
     let color_map = mk_new_table (v_size g) in
     let parent_map = mk_new_table (v_size g) in
@@ -38,7 +38,7 @@ module GraphBFS = struct
     (*Make distance of s Finite 0)*)
     insert distance_map s (Finite 0);
     (*Make parent of S None*)
-    insert parent_map s (None);
+    insert parent_map s (Some root);
 
 
     (* Make a queue *)
@@ -61,44 +61,42 @@ and the edge (u, v) are added to the tree.*)
           insert color_map v Gray;
           insert distance_map v ((get_exn @@ get distance_map u) + Finite 1);
           insert parent_map v (Some u);
-          let siblings = get_exn @@ get tree_map u in
-          insert tree_map u (v :: siblings);
           enqueue q v;
           end
         else if v_color = Gray
         then begin
             let v' = ref (get parent_map v) in
             let u' = ref (get parent_map u) in
-            while !v' <> !u' do
-              if !v' = Some root
+            while get_exn !v' <> get_exn !u' do
+              if get_exn !v' = Some root
               then insert parent_map v (Some root)
-              else insert parent_map v (Some (get parent_map !v'));
+              else insert parent_map v (get_exn @@ get parent_map (get_exn @@ get_exn !v'));
               v' := get parent_map v;
-              if !u' <> Some root
-              then u' := get parent_map !u'
+              if get_exn !u' <> Some root
+              then u' := get parent_map (get_exn @@ get_exn !u')
             done
           end
         else if v_color = Black
         then begin
             let v' = ref (get parent_map v) in
             let u' = ref (get parent_map u) in
-            while !v' <> !u' do
-              if !v' = Some root
+            while get_exn !v' <> get_exn !u' do
+              if get_exn !v' = Some root
               then insert parent_map v (Some root)
-              else insert parent_map v (Some (get parent_map !v'));
+              else insert parent_map v (get_exn @@ get parent_map (get_exn @@ get_exn !v'));
               v' := get parent_map v;
-              if !u' <> Some root
-              then u' := get parent_map !u'
+              if get_exn !u' <> Some root
+              then u' := get parent_map (get_exn @@ get_exn !u')
             done
-          end
-               insert color_map u Black;)
+          end);
+               insert color_map u Black;
     done in
 
 
 (* We iterate through all the nodes with white color after the queue gets empty*)
 
      helper g root;
-     parent_map
+     (all_nodes, parent_map)
 
 end
 
@@ -181,57 +179,4 @@ let gen_rnd_root_graphviz n =
   (root, read_graph_and_payloads n nodes edges' weights);;
 
 
-  (*Helper functions for Tests*)
-
-  open GraphBFS
-
-  let is_reachable_via_bfs g init final =
-  let (roots, _, _, tree) = bfs g in
-  let rec walk n =
-    if n = final then true
-    else
-      NodeTable.get tree n |>
-      Week_01.get_exn |>
-      List.exists (fun v -> walk v)
-  in
-  if List.mem init roots
-  then walk init
-  else false
-
-
-let equ list1 list2 =
-  let rec as_mem l1 l2 =
-  match l1 with
-  | [] -> true
-  | h :: t -> List.mem h l2 && as_mem t l2
-  in
-  List.length list1 = List.length list2 && as_mem list1 list2
-
-
-  (*Test for bfs*)
-
-
-let test_bfs g =
-  let all_nodes = LinkedGraphs.get_nodes g in
-  let (bfs_roots, _, _, _) = GraphBFS.bfs g in
-
-  (* Any node BFS-reachable from a root r is reachable from r *)
-  let fact1 =
-    List.for_all (fun u ->
-        (List.for_all  (fun v ->
-            if is_reachable_via_bfs g u v
-            then is_reachable g u v
-            else true) all_nodes)) bfs_roots
-  in
-
-  (* Any node is reachable from some root r *)
-  let fact2 =
-    List.for_all (fun u ->
-        (List.exists (fun r -> is_reachable_via_bfs g r u) bfs_roots))
-          all_nodes in
-
-   (* Roots of the trees we obtain from DFS search and BFS search are the same*)
-   let (dfs_roots, _, _, _) = GraphDFS.dfs g in
-   let fact3 =  equ bfs_roots  dfs_roots in
-
-  fact1 && fact2 && fact3
+ 
