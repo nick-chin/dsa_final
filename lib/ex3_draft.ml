@@ -9,6 +9,7 @@
 #use "ex3_libraries.ml";;
 #use "ex3_rooms.ml";;
 
+(* helper functions *)
 (* changed 0. to pi *)
 let point_within_polygon1 pol p = 
   (* let ray = (p, 0.) in *)
@@ -35,6 +36,13 @@ let point_within_polygon1 pol p =
       in
       n mod 2 = 1
     end;;
+
+(* check if a 1 x 1 square given by p (its left-bottom corner) is inside the room *)
+let square_inside_room room p =
+  let Point (x, y) = p in
+  let corners = [p; Point (x +. 1., y); Point (x +. 1., y +. 1.); Point (x, y +. 1.)] in
+  let res = List.map (fun e -> point_within_polygon1 room e) corners in
+  List.for_all (fun e -> e) res;;
 
 (* 1. *)
 
@@ -80,15 +88,50 @@ let get_next_moves room p =
   let candidates = [Point (x +. 1., y); Point (x, y +. 1.); Point (x -. 1., y); Point (x, y -. 1.)] in
   let next_moves = List.filter (fun e -> square_inside_room room e) candidates in
   next_moves;;
-  
 
+(* Greedy *)
 let get_watchman_path room =
   let p = Point (0., 0.) in
   let path = ref [p] in
   let lighted_squares = ref [p] in
   let all_squares = get_all_squares room in
   let neighbours = get_neighbours room p in
-  let rec loop ngbrs next = ()'
+  let next_moves = get_next_moves room p in
+  (* TBD *)
+  ();;
+
+(*
+let get_watchman_path_random room =
+  let p = Point (0., 0.) in
+  let path = ref [p] in
+  let lighted_squares = ref [p] in
+  let all_squares = get_all_squares room in
+  let position = ref p in
+  while not (same_elems !lighted_squares all_squares) do
+    let next_moves = get_next_moves room !position in
+    let len = List.length next_moves in
+    position := List.nth next_moves (Random.int len);
+    lighted_squares := uniq ((get_neighbours room !position) @ !lighted_squares);
+    path := !position :: !path
+  done;
+  List.rev (!path);;
+
+let get_watchman_path_probabilistic room =
+  let res = ref [] in
+  for _ = 1 to 50 do
+    let route = get_watchman_path_random room in
+    res := route :: !res
+  done;
+  let comp l1 l2 =
+    let len1 = List.length l1 in
+    let len2 = List.length l2 in
+    if len1 < len2 then (-1)
+    else if len1 > len2 then 1
+    else 0
+  in
+  res := List.sort comp !res;
+  List.hd !res;;
+*)
          
   
 (* 5. Visualization *)
@@ -109,13 +152,6 @@ let cast_light p scaling_factor =
   let sf = int_of_float scaling_factor in
   set_color yellow;
   fill_rect (int_of_float x) (int_of_float y) sf sf;;
-
-(* check if a 1 x 1 square given by p (its left-bottom corner) is inside the room *)
-let square_inside_room room p =
-  let Point (x, y) = p in
-  let corners = [p; Point (x +. 1., y); Point (x +. 1., y +. 1.); Point (x, y +. 1.)] in
-  let res = List.map (fun e -> point_within_polygon1 room e) corners in
-  List.for_all (fun e -> e) res;;
 
 (* return the center of a square given by its lower left corner *)
 let square_center p scaling_factor =
@@ -153,8 +189,6 @@ let draw_route route scaling_factor =
 
 (* visualize a watchman route in a room (scaled) *)
 let visualize room route scaling_factor =
-  (* List.iter (fun p -> cast_light_around room p) route;
-  draw_route route;; *)
   let len = List.length route in
   let arr = Array.of_list route in
   for i = 0 to (len - 2) do
@@ -162,12 +196,21 @@ let visualize room route scaling_factor =
     cast_light_around room arr.(i) scaling_factor;
     draw_line arr.(i) arr.(i+1) scaling_factor
   done;
-  cast_light_around room arr.(len - 1);;
+  cast_light_around room arr.(len - 1) scaling_factor;;
                        
                               
 open TestRooms;;
+(*
 let route = List.map (fun e -> Point (float_of_int (fst e), float_of_int (snd e))) [(0, 0); (0, 1); (1, 1); (2, 1); (3, 1); (4, 1); (5, 1); (6, 1)];;
 let scaling_factor = 30.0;;
+mk_screen ();;
+draw_room room1 scaling_factor;;
+visualize room1 route scaling_factor;;
+clear_screen ();;
+ *)
+
+let route = get_watchman_path_random room2;;
+let scaling_factor = 10.0;;
 mk_screen ();;
 draw_room room1 scaling_factor;;
 visualize room1 route scaling_factor;;
