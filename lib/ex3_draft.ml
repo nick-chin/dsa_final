@@ -91,14 +91,32 @@ let get_next_moves room p =
 
 (* Greedy *)
 let get_watchman_path room =
-  let p = Point (0., 0.) in
-  let path = ref [p] in
-  let lighted_squares = ref [p] in
+  let p = ref (Point (0., 0.)) in
+  let path = ref [!p] in
+  let neighbours = ref (get_neighbours room !p) in
+  let lighted_squares = ref (!p :: !neighbours) in
   let all_squares = get_all_squares room in
-  let neighbours = get_neighbours room p in
-  let next_moves = get_next_moves room p in
-  (* TBD *)
-  ();;
+  (* compare two moves by the new lighted areas they create *)
+  let comp_move lsqs p1 p2 =
+    let ngbrs1 = get_neighbours room p1 in
+    let ngbrs2 = get_neighbours room p2 in
+    let new1 = List.filter (fun e -> not (List.mem e lsqs)) ngbrs1 in
+    let new2 = List.filter (fun e -> not (List.mem e lsqs)) ngbrs2 in
+    let len1 = List.length new1 in
+    let len2 = List.length new2 in
+    if len1 < len2 then (-1)
+    else if len1 > len2 then 1
+    else 0
+  in
+  while not (same_elems !lighted_squares all_squares) do
+    let next_moves = get_next_moves room !p in
+    let next_move = List.hd (List.sort (comp_move !lighted_squares) next_moves) in
+    p := next_move;
+    neighbours := get_neighbours room !p;
+    lighted_squares := uniq (!neighbours @ !lighted_squares);
+    path := !p :: !path
+  done;
+  List.rev (!path);;
 
 (*
 let get_watchman_path_random room =
@@ -209,9 +227,11 @@ visualize room1 route scaling_factor;;
 clear_screen ();;
  *)
 
+(*
 let route = get_watchman_path_random room2;;
 let scaling_factor = 10.0;;
 mk_screen ();;
 draw_room room1 scaling_factor;;
 visualize room1 route scaling_factor;;
 clear_screen ();;
+ *)
