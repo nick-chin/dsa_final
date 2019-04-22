@@ -61,10 +61,9 @@ let cast_light p =
 (* check if a 1 x 1 square given by p (its left-bottom corner) is inside the room *)
 let square_inside_room room p =
   let Point (x, y) = p in
-  point_within_polygon1 room p &&
-    point_within_polygon1 room (Point (x +.1., y)) &&
-      point_within_polygon1 room (Point (x +. 1., y +. 1.)) &&
-        point_within_polygon1 room (Point (x, y +. 1.));;
+  let corners = [p; Point (x +. 1., y); Point (x +. 1., y +. 1.); Point (x, y +. 1.)] in
+  let res = List.map (fun e -> point_within_polygon1 room e) corners in
+  List.for_all (fun e -> e) res;;
 
 (* return the center of a square given by its lower left corner *)
 let square_center p =
