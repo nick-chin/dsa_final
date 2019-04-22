@@ -18,24 +18,19 @@ module GraphBFS = struct
 
   type color = White | Gray | Black
 
-  let  bfs g =
+  let bfs (root, g) =
 
     let color_map = mk_new_table (v_size g) in
     let parent_map = mk_new_table (v_size g) in
-    let tree_map = mk_new_table (v_size g) in
     let distance_map = mk_new_table (v_size g) in
-    let has_cycles = ref false in
-    let roots = ref [] in
     let all_nodes = get_nodes g in
 
     (* Make all nodes white *)
     List.iter  (fun n -> insert color_map n White) all_nodes;
     (* Make all distances Infinity *)
-    List.iter  (fun n -> insert distance_map n Infinity) all_nodes ;
+    List.iter  (fun n -> insert distance_map n Infinity) all_nodes;
     (*Make the parent of each node None*)
-    List.iter  (fun n -> insert parent_map n None) all_nodes ;
-    (*Initialize tree map*)
-    List.iter (fun n -> insert tree_map n []) all_nodes;
+    List.iter  (fun n -> insert parent_map n None) all_nodes;
 
      let helper g s =
     (*Make color of s gray*)
@@ -70,74 +65,40 @@ and the edge (u, v) are added to the tree.*)
           insert tree_map u (v :: siblings);
           enqueue q v;
           end
-        else if v_color = Gray then
-
-                  let existing_parent = get parent_map v in
-                  let new_proposed_parent = u in
-                  let current_distance = get_exn @@ get distance_map v;
-                  let new_proposed_distance = ((get_exn @@ get distance_map u) + Finite 1);
-                      if current_distance < new_proposed_distance then has_cycles := true;
-
-                      if (current_distance = new_proposed_distance) then
-                        let pred_gray = get parent_map v in
-                        let proposed_pred = u in
-                        let parent_pred_gray = ref (get parent pred_gray) in
-                        let parent_proposed_pred = ref (get parent proposed_pred) in
-                        while (parent_pred_gray !=  parent_proposed_pred) do
-                          parent_pred_gray := parent !parent_pred_gray;
-                          parent_proposed_pred := parent !parent_proposed_pred;
-                        done;
-                        insert parent_map v (Some !parent_proposed_pred);
-                        assert(!parent_pred_gray = ! parent_pred_gray);
-                        insert distance_map v ((get_exn @@ get distance_map !parent_proposed_pred) + Finite 1);
-                        let siblings = get_exn @@ get tree_map !parent_proposed_pred in
-                        insert tree_map !parent_proposed_pred (v :: siblings);
-                        let removed_siblings = get_exn @@ get tree_map existing_parent in
-                        insert tree_map u (List.filter (fun a -> a <> v) removed_siblings);
-                        has_cycles := true;
-
-
-                        else
-                          insert parent_map v (Some u);
-                          insert distance_map v ((get_exn @@ get distance_map u) + Finite 1);
-                          let siblings = get_exn @@ get tree_map u in
-                          insert tree_map u (v :: siblings);
-                          let removed_siblings = get_exn @@ get tree_map existing_parent in
-                          insert tree_map u (List.filter (fun a -> a <> v) removed_siblings);
-                          has_cycles := true;
-
-      else if v_color = Black
-      then has_cycles := true;
-      insert color_map u Black;)
-   done in
+        else if v_color = Gray
+        then begin
+            let v' = ref (get parent_map v) in
+            let u' = ref (get parent_map u) in
+            while !v' <> !u' do
+              if !v' = Some root
+              then insert parent_map v (Some root)
+              else insert parent_map v (Some (get parent_map !v'));
+              v' := get parent_map v;
+              if !u' <> Some root
+              then u' := get parent_map !u'
+            done
+          end
+        else if v_color = Black
+        then begin
+            let v' = ref (get parent_map v) in
+            let u' = ref (get parent_map u) in
+            while !v' <> !u' do
+              if !v' = Some root
+              then insert parent_map v (Some root)
+              else insert parent_map v (Some (get parent_map !v'));
+              v' := get parent_map v;
+              if !u' <> Some root
+              then u' := get parent_map !u'
+            done
+          end
+               insert color_map u Black;)
+    done in
 
 
 (* We iterate through all the nodes with white color after the queue gets empty*)
 
-      all_nodes |> List.iter (fun n ->
-        if get_exn @@ get color_map n = White
-        then begin
-          (* Record roots *)
-          roots := n :: !roots;
-          helper g n
-        end);
-    (!roots, parent_map, distance_map, tree_map)
-
-    (* Visualise with BFS *)
-let graphviz_with_bfs g out =
-let (_, _, _, tree) = bfs g in
-let eattrib (s, d) = match get tree s with
-  | None -> ""
-  | Some p ->
-    if List.mem d p
-    then bold_edge
-    else ""
-in
-let open Week_10_ReadingFiles in
-let ag = LinkedGraphs.to_adjacency_graph g in
-let s = graphviz_string_of_graph "digraph" " -> "
-    string_of_int eattrib ag in
-write_string_to_file out s
+     helper g root;
+     parent_map
 
 end
 
@@ -217,7 +178,7 @@ let gen_rnd_root_graphviz n =
   let edges' = edges g' in
   let weights = List.map (fun (x, y) -> (x, y, 1)) edges' in
   Printf.printf "Root is %d" root;
-  read_graph_and_payloads n nodes edges' weights;;
+  (root, read_graph_and_payloads n nodes edges' weights);;
 
 
   (*Helper functions for Tests*)
