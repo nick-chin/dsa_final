@@ -36,7 +36,7 @@ module GraphSentinel = struct
     (*Make distance of s Finite 0)*)
     insert distance_map s (Finite 0);
     (*Make parent of S None*)
-    insert parent_map s (Some root);
+    insert parent_map s root;
 
 
     (* Make a queue *)
@@ -58,7 +58,7 @@ and the edge (u, v) are added to the tree.*)
         then begin
           insert color_map v Gray;
           insert distance_map v ((get_exn @@ get distance_map u) + Finite 1);
-          insert parent_map v (Some u);
+          insert parent_map v u;
           enqueue q v;
           end
         else if v_color = Gray
@@ -66,12 +66,9 @@ and the edge (u, v) are added to the tree.*)
             let v' = ref (get parent_map v) in
             let u' = ref (get parent_map u) in
             while get_exn !v' <> get_exn !u' do
-              if get_exn !v' = Some root
-              then insert parent_map v (Some root)
-              else insert parent_map v (get_exn @@ get parent_map (get_exn @@ get_exn !v'));
-              v' := get parent_map v;
-              if get_exn !u' <> Some root
-              then u' := get parent_map (get_exn @@ get_exn !u')
+				insert parent_map v (get parent_map (get_exn !v'));
+				v' := get parent_map v;
+				u' := get parent_map (get_exn !u')
             done
           end
         else if v_color = Black
@@ -81,15 +78,12 @@ and the edge (u, v) are added to the tree.*)
 			let v' = ref (get parent_map v) in
             let u' = ref (get parent_map u) in
 			for _ = 1 to dist_u - dist_v do
-				u' := get parent_map (get_exn @@ get_exn !u')
+				u' := get parent_map (get_exn !u')
 			done;
             while get_exn !v' <> get_exn !u' do
-              if get_exn !v' = Some root
-              then insert parent_map v (Some root)
-              else insert parent_map v (get_exn @@ get parent_map (get_exn @@ get_exn !v'));
-              v' := get parent_map v;
-              if get_exn !u' <> Some root
-              then u' := get parent_map (get_exn @@ get_exn !u')
+				insert parent_map v (get parent_map (get_exn !v'));
+				v' := get parent_map v;
+				u' := get parent_map (get_exn !u')
             done
           end);
                insert color_map u Black;
