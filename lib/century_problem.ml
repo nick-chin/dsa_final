@@ -1,7 +1,14 @@
+(*******************************************)
+(*       Part 1: Defining a Data Type      *)
+(*******************************************)
+
 type expr =
   | Add
   | Multi
   | Num of int;;
+
+
+(* The 2 example solutions *)
 
 let a = [Num (1); Num (2); Add; Num(3); Num (4); Add;
          Num (5); Multi; Num (6); Add; Num (7); Add;
@@ -11,6 +18,9 @@ let b = [Num (1); Add; Num (2); Multi; Num (3); Add;
          Num (4); Add; Num (5); Add; Num (6); Num (7);
          Add; Num (8); Add; Num (9)];;
 
+
+
+(* Dealing with multiple digits *)
 
 let conjoin_num (ls : expr list) =
   let rec walk l acc_num acc_ls  =
@@ -23,6 +33,10 @@ let conjoin_num (ls : expr list) =
   walk ls 0 [];;
 
 conjoin_num a;;
+
+
+
+(* Evaluating multiplication *)
 
 let multi_num (ls : expr list) =
   let rec walk l acc =
@@ -40,6 +54,10 @@ let multi_num (ls : expr list) =
 
 multi_num @@ conjoin_num a;;
 
+
+
+(* Evaluating addition *)
+
 let add_num (ls : expr list) =
   let rec walk l acc =
     match l with
@@ -49,18 +67,43 @@ let add_num (ls : expr list) =
   in
   walk ls 0;;
 
-
 add_num @@ multi_num @@ conjoin_num a;;
 add_num @@ multi_num @@ conjoin_num b;;
 
+(* All 3 in proper order *)
+
 let eval_expr ls =
   add_num @@ multi_num @@ conjoin_num ls;;
+
+
+(*******************************************)
+(*         Part 2: Pretty Printing         *)
+(*******************************************)
+
+let pp (e : expr) =
+  match e with
+  | Num x -> Printf.printf "%d" x;
+  | Add -> Printf.printf " + ";
+  | Multi -> Printf.printf " * ";;
+
+let print_expr (ls : expr list) =
+  List.map pp ls;
+  print_newline ();;
+
+print_expr a;;
+print_expr b;;
+
+(*******************************************)
+(*       Part 3: Generating Candidates     *)
+(*******************************************)
+
+(* Generate all 6561 candidates *)
 
 let gen_candidates _ =
   let rec apply_expr lst n =
     match lst with
     | [] -> []
-    | x -> [Num (n) :: Add :: x; Num (n) :: Multi :: x; Num (n) ::x]
+    | x -> [Num (n) :: Add :: x; Num (n) :: Multi :: x; Num (n) :: x]
   in
 
   let rec apply_num_and_expr big_list n =
@@ -68,12 +111,12 @@ let gen_candidates _ =
     match big_list with
     | [] -> apply_num_and_expr ([Num (n)] :: []) (n - 1)
     | x ->
-       apply_num_and_expr (List.fold_left (fun i h -> (apply_expr h n) @ i) [] big_list) (n - 1)
+       apply_num_and_expr (List.fold_left (fun i h -> (apply_expr h n) @ i) [] x) (n - 1)
   in
   apply_num_and_expr [] 9;;
 
 
+(* Finding all solutions *)
+
 let century_candidates = 
   List.filter (fun x -> eval_expr x = 100) (gen_candidates ());;
-
-List.length century_candidates;;
