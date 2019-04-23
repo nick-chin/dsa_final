@@ -89,6 +89,49 @@ let get_next_moves room p =
   let next_moves = List.filter (fun e -> square_inside_room room e) candidates in
   next_moves;;
 
+module Set = BinarySearchTree;;
+(* hash table to record lighted squares *)
+module SquareTable =
+  ResizableListBasedHashTable(struct type t = point * bool end);;
+
+(* Greedy: using hash tables *)
+let get_watchman_path room =
+  let p = ref (Point (0., 0.)) in
+  let path = ref [!p] in
+  let neighbours = ref (get_neighbours room !p) in
+  let all_squares = get_all_squares room in
+  let num_of_squares = List.length all_squares in
+  let open SquareTable in
+  let lighted_squares = mk_new_table 5 in
+  List.iter (fun e -> insert lighted_squares e true) !neighbours;
+  (* compare two moves by the new lighted areas they create in reversed order *)
+  let comp_move lsqs p1 p2 =
+    let ngbrs1 = get_neighbours room p1 in
+    let ngbrs2 = get_neighbours room p2 in
+    let check_lighted value =
+      match value with
+      | None -> false
+      | _ -> true
+    in
+    let new1 = List.filter (fun e -> check_lighted (get lsqs e)) ngbrs1 in
+    let new2 = List.filter (fun e -> check_lighted (get lsqs e)) ngbrs2 in
+    let len1 = List.length new1 in
+    let len2 = List.length new2 in
+    if len1 < len2 then 1
+    else if len1 > len2 then (-1)
+    else 0
+  in
+  while (!(lighted_squares.size) < num_of_squares) do
+    let next_moves = get_next_moves room !p in
+    let next_move = List.hd (List.sort (comp_move lighted_squares) next_moves) in
+    p := next_move;
+    neighbours := get_neighbours room !p;
+    List.iter (fun e -> insert lighted_squares e true) (uniq (!neighbours));
+    path := !p :: !path
+  done;
+  List.rev (!path);;
+
+
 (* Greedy *)
 let get_watchman_path room =
   let p = ref (Point (0., 0.)) in
@@ -104,8 +147,8 @@ let get_watchman_path room =
     let new2 = List.filter (fun e -> not (List.mem e lsqs)) ngbrs2 in
     let len1 = List.length new1 in
     let len2 = List.length new2 in
-    if len1 < len2 then (-1)
-    else if len1 > len2 then 1
+    if len1 < len2 then 1
+    else if len1 > len2 then (-1)
     else 0
   in
   while not (same_elems !lighted_squares all_squares) do
@@ -218,14 +261,13 @@ let visualize room route scaling_factor =
                        
                               
 open TestRooms;;
-(*
+
 let route = List.map (fun e -> Point (float_of_int (fst e), float_of_int (snd e))) [(0, 0); (0, 1); (1, 1); (2, 1); (3, 1); (4, 1); (5, 1); (6, 1)];;
 let scaling_factor = 30.0;;
 mk_screen ();;
 draw_room room1 scaling_factor;;
 visualize room1 route scaling_factor;;
 clear_screen ();;
- *)
 
 (*
 let route = get_watchman_path_random room2;;
