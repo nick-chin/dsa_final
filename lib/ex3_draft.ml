@@ -94,7 +94,47 @@ module Set = BinarySearchTree;;
 module SquareTable =
   ResizableListBasedHashTable(struct type t = point * bool end);;
 
-(* Greedy: using hash tables *)
+(* check if moving to point p lights up new squares *)
+let light_new_squares room lighted_squares p =
+  let neighbours = get_neighbours room p in
+  let check_lighted value =
+    match value with
+    | None -> false
+    | _ -> true
+  in let open SquareTable in
+  let new_lighted = List.filter (fun e -> not (check_lighted (get lighted_squares e))) neighbours in
+  new_lighted <> [];;
+    
+(* check if we can go from point p in a certain direction and light unlighted squares without stepping outside the room *)
+let can_go direction room lighted_squares p =
+  let next_moves = get_next_moves room p in
+  let next_move = ref (List.hd next_moves) in
+  if direction = "up"
+  then next_move := (++) p (0., 1.)
+  else if direction = "right"
+  then next_move := (++) p (1., 0.)
+  else if direction = "down"
+  then next_move := (++) p (0., -1.)
+  else if direction = "left"
+  then next_move := (++) p (-1., -1.);
+  (* the chosen next_move is in the room and does light new squares *)
+  if (List.mem !next_move next_moves) && (light_new_squares room lighted_squares !next_move)
+  then Some !next_move
+  else None;;
+
+(* choose the next move according to priority list of directions; if we cannot light new squares by moving in any of the four directions, we return None to indicate that we are trapped and the procedure needs to restart in another (possibly distant) unlighted square *)
+let rec choose_next_move room current_pos preferences lighted_squares counter =
+  let dir = preferences.(counter mod 4) in
+  match can_go dir room lighted_squares current_pos with
+  | Some next_move -> Some next_move
+  | None ->
+     if counter <> 4
+     then
+       choose_next_move room current_pos preferences lighted_squares (counter + 1)
+     else
+       None;;
+
+(* fixed preference & backtrack via shortest path to unlighted squares and restart (TBD) *)
 let get_watchman_path room =
   let p = ref (Point (0., 0.)) in
   let path = ref [!p] in
@@ -103,96 +143,47 @@ let get_watchman_path room =
   let num_of_squares = List.length all_squares in
   let open SquareTable in
   let lighted_squares = mk_new_table 5 in
-  List.iter (fun e -> insert lighted_squares e true) !neighbours;
-  (* compare two moves by the new lighted areas they create in reversed order *)
-  let comp_move lsqs p1 p2 =
-    let ngbrs1 = get_neighbours room p1 in
-    let ngbrs2 = get_neighbours room p2 in
-    let check_lighted value =
-      match value with
-      | None -> false
-      | _ -> true
-    in
-    let new1 = List.filter (fun e -> check_lighted (get lsqs e)) ngbrs1 in
-    let new2 = List.filter (fun e -> check_lighted (get lsqs e)) ngbrs2 in
-    let len1 = List.length new1 in
-    let len2 = List.length new2 in
-    if len1 < len2 then 1
-    else if len1 > len2 then (-1)
-    else 0
-  in
   while (!(lighted_squares.size) < num_of_squares) do
-    let next_moves = get_next_moves room !p in
-    let next_move = List.hd (List.sort (comp_move lighted_squares) next_moves) in
-    p := next_move;
-    neighbours := get_neighbours room !p;
-    List.iter (fun e -> insert lighted_squares e true) (uniq (!neighbours));
-    path := !p :: !path
+    (* might change to dynamic update of preferences *)
+    let preferences = [|"up"; "right"; "down"; "left"|] in
+    let next_move = choose_next_move room !p preferences lighted_squares 0 in
+    if next_move <> None
+    then
+      begin
+        (* update lighted_squares *)
+        List.iter (fun e -> insert lighted_squares e true) (uniq (!neighbours));
+        p := get_exn next_move;
+        neighbours := get_neighbours room !p;
+        path := !p :: !path           
+      end
+    else
+      (* TBD *)
+      (* if we are trapped, restart procedure at an unlighted square *)
+      ();
   done;
-  List.rev (!path);;
-
-
-(* Greedy *)
-let get_watchman_path room =
-  let p = ref (Point (0., 0.)) in
-  let path = ref [!p] in
-  let neighbours = ref (get_neighbours room !p) in
-  let lighted_squares = ref (!p :: !neighbours) in
-  let all_squares = get_all_squares room in
-  (* compare two moves by the new lighted areas they create *)
-  let comp_move lsqs p1 p2 =
-    let ngbrs1 = get_neighbours room p1 in
-    let ngbrs2 = get_neighbours room p2 in
-    let new1 = List.filter (fun e -> not (List.mem e lsqs)) ngbrs1 in
-    let new2 = List.filter (fun e -> not (List.mem e lsqs)) ngbrs2 in
-    let len1 = List.length new1 in
-    let len2 = List.length new2 in
-    if len1 < len2 then 1
-    else if len1 > len2 then (-1)
-    else 0
-  in
-  while not (same_elems !lighted_squares all_squares) do
-    let next_moves = get_next_moves room !p in
-    let next_move = List.hd (List.sort (comp_move !lighted_squares) next_moves) in
-    p := next_move;
-    neighbours := get_neighbours room !p;
-    lighted_squares := uniq (!neighbours @ !lighted_squares);
-    path := !p :: !path
-  done;
-  List.rev (!path);;
+  List.rev !path;;
 
 (*
-let get_watchman_path_random room =
-  let p = Point (0., 0.) in
-  let path = ref [p] in
-  let lighted_squares = ref [p] in
-  let all_squares = get_all_squares room in
-  let position = ref p in
-  while not (same_elems !lighted_squares all_squares) do
-    let next_moves = get_next_moves room !position in
-    let len = List.length next_moves in
-    position := List.nth next_moves (Random.int len);
-    lighted_squares := uniq ((get_neighbours room !position) @ !lighted_squares);
-    path := !position :: !path
-  done;
-  List.rev (!path);;
-
-let get_watchman_path_probabilistic room =
-  let res = ref [] in
-  for _ = 1 to 50 do
-    let route = get_watchman_path_random room in
-    res := route :: !res
-  done;
-  let comp l1 l2 =
-    let len1 = List.length l1 in
-    let len2 = List.length l2 in
-    if len1 < len2 then (-1)
-    else if len1 > len2 then 1
-    else 0
-  in
-  res := List.sort comp !res;
-  List.hd !res;;
-*)
+open TestRooms;;
+let room0 = [Point (0., 0.); Point (8., 0.); Point (8., 2.); Point (0., 2.)];;
+let room = room1;;
+let p = ref (Point (0., 0.));;
+let path = ref [!p];;
+let neighbours = ref (get_neighbours room !p);;
+let all_squares = get_all_squares room;;
+let num_of_squares = List.length all_squares;;
+open SquareTable;;
+let lighted_squares = mk_new_table 5;;
+(!(lighted_squares.size) < num_of_squares);;
+let preferences = [|"up"; "right"; "down"; "left"|];;
+let next_move = choose_next_move room !p preferences lighted_squares 0;;
+next_move <> None;;
+List.iter (fun e -> insert lighted_squares e true) (uniq (!neighbours));;
+p := get_exn next_move;;
+neighbours := get_neighbours room !p;;
+path := !p :: !path;;
+List.rev !path;;
+ *)
          
   
 (* 5. Visualization *)
@@ -229,8 +220,8 @@ let lighted p scaling_factor =
 let cast_light_around room p scaling_factor =
   let Point (x, y) = p in
   let corners = [Point (x, y); Point (x +. 1., y); Point (x +. 1., y +. 1.); Point (x, y +. 1.); Point (x -. 1., y +. 1.); Point (x -. 1., y); Point (x -. 1., y -. 1.); Point (x, y -. 1.); Point (x +. 1., y -. 1.)] in
-  List.iter (fun e -> if (square_inside_room room e) &&
-                           (not (lighted e scaling_factor)) then cast_light e scaling_factor) corners;;
+  List.iter (fun e -> if (square_inside_room room e) && (not (lighted e scaling_factor))
+                      then cast_light e scaling_factor) corners;;
 
 (* draw a red line between points a and b (scaled) *)
 let draw_line a b scaling_factor =
