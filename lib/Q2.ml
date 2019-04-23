@@ -84,7 +84,8 @@ and the edge (u, v) are added to the tree.*)
 				insert parent_map v (get parent_map (get_exn !v'));
 				v' := get parent_map v;
 				u' := get parent_map (get_exn !u')
-            done
+            done;
+			insert distance_map v (get_exn @@ get distance_map (get_exn !v'))
           end);
                insert color_map u Black;
     done in
