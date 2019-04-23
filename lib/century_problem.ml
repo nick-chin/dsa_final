@@ -120,3 +120,12 @@ let gen_candidates _ =
 
 let century_candidates = 
   List.filter (fun x -> eval_expr x = 100) (gen_candidates ());;
+  
+let test_candidates _ = 
+  let walk ls =
+    match ls with
+	  | [] -> ()
+	  | h :: t ->
+	    assert (eval_expr h == 100);
+		walk t
+  in walk century_candidates;;
