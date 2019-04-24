@@ -1,13 +1,11 @@
 open Week_01
+open Week_02
 open Week_06
 open Week_13_Paths
-open Week_02
-
 open Week_12_Graphs
 open Week_13_Reachability
 open Week_12_BST
 open BinarySearchTree
-
 open LinkedGraphs
 
 
@@ -92,7 +90,7 @@ and the edge (u, v) are added to the tree.*)
     done in
 
 
-(* We iterate through all the nodes with white color after the queue gets empty*)
+(* We perform the function on the root*)
 
      helper g root;
      (all_nodes, parent_map)
@@ -126,9 +124,7 @@ end
 
 
 
-
-(*Procedure to generate random graph*)
-
+(*Procedure to generate random graph - helper functions*)
 
 let gen_nodes n = let arr = Array.make n "0" in
 let root = (Random.int (n -1)) in
@@ -172,7 +168,7 @@ let ensure_reachability graph n root =
          add_edge graph (fst (an_edge)) (snd (an_edge));
          add_edge graph (snd (an_edge)) x;
       done;
-    end)) all_nodes;;
+    end)) all_nodes
 
 
 (*Procedure to generate random rooted graph*)
@@ -186,7 +182,7 @@ let gen_random_rooted_graph n =
   addnodes nodes g;
   addedges edges g;
   ensure_reachability g n root;
-  (root, g);;
+  (root, g)
 
 
 (*Procedure to generate random rooted graph with weights*)
@@ -205,7 +201,7 @@ let gen_rnd_root_graphviz n =
   let edges' = edges g' in
   let weights = List.map (fun (x, y) -> (x, y, 1)) edges' in
   Printf.printf "Root is %d" root;
-  (root, read_graph_and_payloads n nodes edges' weights);;
+  (root, read_graph_and_payloads n nodes edges' weights)
 
 
 (*Tests by generating random Paths*)
@@ -252,14 +248,14 @@ let rec dfs_changed g root =
     insert time_map u (u_in, u_out)
   in
  dfs_visit root;
-(!roots, tree_map, time_map, !has_cycles);;
+(!roots, tree_map, time_map, !has_cycles)
 
 
 (*Gives random element from a list*)
 
 
 let randomelement l =
-    List.nth l (Random.int (List.length l));;
+    List.nth l (Random.int (List.length l))
 
 
 (* Generates random path in a rooted from the root to any other node*)
@@ -276,7 +272,7 @@ let gen_path_list (root, g) =
     path_list := rand:: !path_list;
     path_current := get_exn @@ get table rand;
   done;
-!path_list;;
+!path_list
 
 
 
@@ -290,7 +286,7 @@ let gen_strict_sentinels a root table  =
     sentinel := get_exn @@ get table !sentinel;
     sentinel_list := !sentinel :: !sentinel_list
   done;
-  !sentinel_list;;
+  !sentinel_list
 
 
 (*Test for sentinel property *)
@@ -307,4 +303,4 @@ let test_for_sentinel_property (root, g) n=
                      success := !success && (List.mem x list_of_path)) sentinels_of_h) in
     check_sentinel_property_each list_paths
   done;
-  !success;;
+  !success
