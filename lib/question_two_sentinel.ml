@@ -175,6 +175,8 @@ let ensure_reachability graph n root =
     end)) all_nodes;;
 
 
+(*Procedure to generate random rooted graph*)
+
 let gen_random_rooted_graph n =
   let g = mk_graph() in
   let node_root = gen_nodes n in
@@ -186,6 +188,8 @@ let gen_random_rooted_graph n =
   ensure_reachability g n root;
   (root, g);;
 
+
+(*Procedure to generate random rooted graph with weights*)
 
 let gen_rnd_root_graphviz n =
   let g = mk_graph() in
@@ -202,3 +206,105 @@ let gen_rnd_root_graphviz n =
   let weights = List.map (fun (x, y) -> (x, y, 1)) edges' in
   Printf.printf "Root is %d" root;
   (root, read_graph_and_payloads n nodes edges' weights);;
+
+
+(*Tests by generating random Paths*)
+open GraphSentinel
+open NodeTable
+
+(*Depth First Search*)
+
+
+
+
+let rec dfs_changed g root =
+  let color_map = mk_new_table (v_size g) in
+  let tree_map = mk_new_table (v_size g) in
+  let time_map = mk_new_table (v_size g) in
+  let has_cycles = ref false in
+  let roots = ref [] in
+  let all_nodes = get_nodes g in
+
+  (* Make all nodes white *)
+  List.iter (fun n -> insert color_map n White) all_nodes;
+  (* Insert all nodes to the tree *)
+  List.iter (fun n -> insert tree_map n []) all_nodes;
+
+  let time = ref 0 in
+
+  let rec dfs_visit u =
+    time := !time + 1;
+    let u_in = !time in
+    insert color_map u Gray;
+    get_succ g u |> List.iter (fun v ->
+        let v_color = get_exn @@ get color_map v in
+        if v_color = White
+        then begin
+          let siblings = get_exn @@ get tree_map u in
+          insert tree_map u (v :: siblings);
+          dfs_visit v
+        end
+        else if v_color = Gray
+        then has_cycles := true) ;
+    insert color_map u Black;
+    time := !time + 1;
+    let u_out = !time in
+    insert time_map u (u_in, u_out)
+  in
+ dfs_visit root;
+(!roots, tree_map, time_map, !has_cycles);;
+
+
+(*Gives random element from a list*)
+
+
+let randomelement l =
+    List.nth l (Random.int (List.length l));;
+
+
+(* Generates random path in a rooted from the root to any other node*)
+
+let gen_path_list (root, g) =
+  let a = dfs_changed g root in
+  let sec t = match t with
+  (_, b, _, _) -> b in
+  let table = sec a in
+  let path_current = ref ( get_exn @@ get table root) in
+  let path_list = ref [root] in
+  while !path_current  != [] do
+    let rand = randomelement !path_current in
+    path_list := rand:: !path_list;
+    path_current := get_exn @@ get table rand;
+  done;
+!path_list;;
+
+
+
+(* Checks the sentinels of a given node, say a, in a graph*)
+
+
+let gen_strict_sentinels a root table  =
+  let sentinel = ref (get_exn @@ get table a) in
+  let sentinel_list = ref [!sentinel] in
+  while !sentinel != root do
+    sentinel := get_exn @@ get table !sentinel;
+    sentinel_list := !sentinel :: !sentinel_list
+  done;
+  !sentinel_list;;
+
+
+(*Test for sentinel property *)
+
+let test_for_sentinel_property (root, g) n=
+  let success = ref true in
+  for i= 0 to (Random.int n) do
+    let list_paths = gen_path_list (root, g) in
+    let rec check_sentinel_property_each  list_of_path=
+      match list_of_path with
+      | [] -> success := true && !success
+      | h::t-> let sentinels_of_h = gen_strict_sentinels h root (snd @@ sentinel_tree (root, g)) in
+      (List.iter (fun x -> x;
+                     success := !success && (List.mem x list_of_path)) sentinels_of_h) in
+    check_sentinel_property_each list_paths
+  done;
+  !success;;
