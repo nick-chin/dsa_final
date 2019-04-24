@@ -97,35 +97,36 @@ print_expr b;;
 (*       Part 3: Generating Candidates     *)
 (*******************************************)
 
-(* Generate all 6561 candidates *)
+(* Generating candidates based on a list of digits *)
 
-let gen_candidates _ =
+let gen_candidates i_list =
   let rec apply_expr lst n =
     match lst with
     | [] -> []
     | x -> [Num (n) :: Add :: x; Num (n) :: Multi :: x; Num (n) :: x]
   in
-
-  let rec apply_num_and_expr big_list n =
-    if n = 0 then big_list else
+  let rec apply_num_and_expr big_list list =
+    if list = [] then big_list else
     match big_list with
-    | [] -> apply_num_and_expr ([Num (n)] :: []) (n - 1)
+    | [] -> apply_num_and_expr ([Num (List.hd list)] :: []) (List.tl list)
     | x ->
-       apply_num_and_expr (List.fold_left (fun i h -> (apply_expr h n) @ i) [] x) (n - 1)
+       apply_num_and_expr (List.fold_left (fun i h -> (apply_expr h (List.hd list)) @ i) [] x) (List.tl list)
   in
-  apply_num_and_expr [] 9;;
+  apply_num_and_expr [] (List.rev i_list);;
 
 
-(* Finding all solutions *)
+(* Finding correct candidates with given digits list and set target *)
 
-let century_candidates = 
-  List.filter (fun x -> eval_expr x = 100) (gen_candidates ());;
-  
-let test_candidates _ = 
-  let walk ls =
-    match ls with
-	  | [] -> ()
-	  | h :: t ->
-	    assert (eval_expr h == 100);
-		walk t
-  in walk century_candidates;;
+let candidates ls target = 
+  List.filter (fun x -> eval_expr x = target) (gen_candidates ls);;
+
+let test_century_candidates _ =
+  let ls = candidates [1;2;3;4;5;6;7;8;9] 100 in
+  let rec confirm l =
+    match l with
+    | [] -> ()
+    | h :: t ->
+       assert (eval_expr h = 100);
+       confirm t
+  in
+  confirm ls;;
