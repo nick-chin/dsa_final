@@ -93,9 +93,11 @@ module Set = BinarySearchTree;;
 (* hash table to record lighted squares *)
 module SquareTable =
   ResizableListBasedHashTable(struct type t = point * bool end);;
+module PrefTable =
+  ResizableListBasedHashTable(struct type t = point * int end);;
 
-(* check if moving to point p lights up new squares *)
-let light_new_squares room lighted_squares p =
+(* count the number of new squares lighted by moving to point p *)
+let count_new_lighted_squares room lighted_squares p =
   let neighbours = get_neighbours room p in
   let check_lighted value =
     match value with
@@ -103,7 +105,11 @@ let light_new_squares room lighted_squares p =
     | _ -> true
   in let open SquareTable in
   let new_lighted = List.filter (fun e -> not (check_lighted (get lighted_squares e))) neighbours in
-  new_lighted <> [];;
+  List.length new_lighted;;
+
+(* check if moving to point p lights up new squares *)
+let light_new_squares room lighted_squares p =
+    count_new_lighted_squares room lighted_squares p <> 0;;
     
 (* check if we can go from point p in a certain direction and light unlighted squares without stepping outside the room *)
 let can_go direction room lighted_squares p =
@@ -133,6 +139,126 @@ let rec choose_next_move room current_pos preferences lighted_squares counter =
        choose_next_move room current_pos preferences lighted_squares (counter + 1)
      else
        None;;
+
+(* compare two moves by the number of potential newly lighted squares in reverse order *)
+let comp_move_new_lighted room lighted_squares p1 p2 =
+  let new1 = count_new_lighted_squares room lighted_squares p1 in
+  let new2 = count_new_lighted_squares room lighted_squares p2 in
+  if new1 < new2 then 1
+  else if new1 > new2 then (-1)
+  else 0;;
+
+let get_pref_table preferences p =
+  let open PrefTable in
+  let pref_table = mk_new_table 4 in
+  for i = 0 to 3 do
+    let direction = preferences.(i) in
+    if direction = "up"
+    then insert pref_table ((++) p (0., 1.)) i
+    else if direction = "right"
+    then insert pref_table ((++) p (1., 0.)) i
+    else if direction = "down"
+    then insert pref_table ((++) p (0., -1.)) i
+    else if direction = "left"
+    then insert pref_table ((++) p (-1., 0.)) i
+  done;
+  pref_table;;
+  
+
+let choose_next_move_greedy_fixed room p preferences lighted_squares =
+  let next_moves = get_next_moves room p in
+  let open PrefTable in
+  let pref_table = get_pref_table preferences p in
+  match List.sort (comp_move_new_lighted room lighted_squares) next_moves with
+  | h1 :: h2 :: t ->
+     if light_new_squares room lighted_squares h1
+     then
+       let new1 = count_new_lighted_squares room lighted_squares h1 in
+       let new2 = count_new_lighted_squares room lighted_squares h2 in
+       if new1 = new2
+       then
+         let priority1 = get pref_table h1 in
+         let priority2 = get pref_table h2 in
+         if priority1 < priority2
+         then Some h1
+         else Some h2
+       else
+         Some h1
+     else None
+  | [h] ->
+     if light_new_squares room lighted_squares h
+     then Some h
+     else None
+  | _ -> None;;
+       
+
+(* greedy & fixed order *)
+let get_watchman_path room =
+  let p = ref (Point (0., 0.)) in
+  let path = ref [!p] in
+  let neighbours = ref (get_neighbours room !p) in
+  let all_squares = get_all_squares room in
+  let num_of_squares = List.length all_squares in
+  let open SquareTable in
+  let lighted_squares = mk_new_table 5 in
+  List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours));
+  let preferences = [|"up"; "right"; "down"; "left"|] in
+  while (!(lighted_squares.size) < num_of_squares) do
+    let next_move = choose_next_move_greedy_fixed room !p preferences lighted_squares in
+    if next_move <> None
+    then
+      begin
+        p := get_exn next_move;
+        neighbours := get_neighbours room !p;
+        path := !p :: !path;
+        List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours));
+      end
+    else
+      (* TBD *)
+      (* if we are trapped, restart procedure at an unlighted square *)
+      ();
+  done;
+  List.rev !path;;
+
+open TestRooms;;
+let room = room1;;
+let p = ref (Point (0., 0.));;
+let path = ref [!p];;
+let neighbours = ref (get_neighbours room !p);;
+let all_squares = get_all_squares room;;
+let num_of_squares = List.length all_squares;;
+open SquareTable;;
+let lighted_squares = mk_new_table 5;;
+List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours));;
+let preferences = [|"up"; "right"; "down"; "left"|];;
+(!(lighted_squares.size) < num_of_squares);;
+let next_move = choose_next_move_greedy_fixed room !p preferences lighted_squares;;
+next_move <> None;;
+p := get_exn next_move;;
+neighbours := get_neighbours room !p;;
+path := !p :: !path;;
+List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours));;
+List.rev !path;;
+
+(* greedy *)
+let get_watchman_path room =
+  let p = ref (Point (0., 0.)) in
+  let path = ref [!p] in
+  let neighbours = ref (get_neighbours room !p) in
+  let all_squares = get_all_squares room in
+  let num_of_squares = List.length all_squares in
+  let open SquareTable in
+  let lighted_squares = mk_new_table 5 in
+  List.iter (fun e -> insert lighted_squares e true) !neighbours;
+  while (!(lighted_squares.size) < num_of_squares) do
+    let next_moves = get_next_moves room !p in
+    let next_move = List.hd (List.sort (comp_move lighted_squares) next_moves) in
+    p := next_move;
+    neighbours := get_neighbours room !p;
+    List.iter (fun e -> insert lighted_squares e true) (uniq (!neighbours));
+    path := !p :: !path
+  done;
+  List.rev (!path);;
 
 (* fixed preference & backtrack via shortest path to unlighted squares and restart (TBD) *)
 let get_watchman_path room =
