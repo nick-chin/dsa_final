@@ -6,9 +6,20 @@ let short_med_long_path =
 let cycle_tree =
 	["6"; "0 1"; "1 2"; "2 3"; "3 4"; "4 5"; "5 2"]
 	
-(* read_graph_and_payloads 11 (fst example_graph) (snd example_graph) ([] : (int * int * unit) list) *)
 let example_graph = 
 	([|"a"; "b"; "c"; "d"; "e"; "f"; "g"; "h"; "i"; "j"; "k"|],
 	[(0, 1); (1, 2); (2, 3); (2, 4); (2, 5); (3, 4); (3, 6); (4, 7); (4, 8);
 	(5, 9); (6, 3); (7, 10); (8, 3); (9, 1); (9, 2); (10, 2)])
+	
+(* let example_graphe = read_graph_and_payloads 11 (fst example_graph) (snd example_graph) ([] : (int * int * unit) list) 
+
+let sentinel_of_example = sentinel_tree (0, example_graphe);;
+
+let viz_sentinel_of_example = visualize_sentinel_tree sentinel_of_example;;
+
+let read_sentinel_of_example = graphviz_with_payload viz_sentinel_of_example (fst example_graph) "sentinel.dot"
+
+ *)
+
+
 	
