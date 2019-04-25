@@ -33,7 +33,7 @@ module GraphSentinel = struct
     insert color_map s Gray;
     (*Make distance of s Finite 0)*)
     insert distance_map s (Finite 0);
-    (*Make parent of S None*)
+    (*Make parent of S the root*)
     insert parent_map s root;
 
 
@@ -48,8 +48,7 @@ module GraphSentinel = struct
 
 (*Perform action on all adjacent vertices*)
 
-(*Whenever a white vertex is found while scanning the adjacent vertices to u, the vertex v
-and the edge (u, v) are added to the tree.*)
+(*For all adjacent vertices of u, we check for the immediate sentinel*)
     get_succ g u |> List.iter (fun v ->
         let v_color = get_exn @@ get color_map v in
         if v_color = White
@@ -208,7 +207,7 @@ let gen_rnd_root_graphviz n =
 open GraphSentinel
 open NodeTable
 
-(*Depth First Search*)
+(*Depth First Search adapted for a rooted graph*)
 
 
 
@@ -251,14 +250,14 @@ let rec dfs_changed g root =
 (!roots, tree_map, time_map, !has_cycles)
 
 
-(*Gives random element from a list*)
+(*Gives random element from a list- saves space in the main function*)
 
 
 let randomelement l =
     List.nth l (Random.int (List.length l))
 
 
-(* Generates random path in a rooted from the root to any other node*)
+(* Generates random path in a rooted graph from the root to any other node by doing 1 round of dfs*)
 
 let gen_path_list (root, g) =
   let a = dfs_changed g root in
@@ -304,3 +303,5 @@ let test_for_sentinel_property (root, g) n=
     check_sentinel_property_each list_paths
   done;
   !success
+  
+  
