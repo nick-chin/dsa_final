@@ -11,6 +11,32 @@ let example_graph =
 	[(0, 1); (1, 2); (2, 3); (2, 4); (2, 5); (3, 4); (3, 6); (4, 7); (4, 8);
 	(5, 9); (6, 3); (7, 10); (8, 3); (9, 1); (9, 2); (10, 2)])
 	
+	
+(* 	let example_graph1 = 
+	([|"a"; "b"; "u"; "v"|],
+	[(0, 1); (0, 2); (1, 3); (2, 3)])
+	
+	let example_graph2 = 
+	([|"a"; "b"; "c"; "d"; "u"; "v"|],
+	[(0, 1); (0, 2); (1, 3); (2, 4); (3, 5); (4, 5)])
+	
+	let example_graph3 = 
+	([|"a"; "b"; "c";  "u"; "v"|],
+	[(0, 1); (1, 2); (2, 3); (2, 4); (3, 4)])
+	
+	let example_graph4 = 
+	([|"a"; "b"; "c";  "d"; "e"; "f"|],
+	[(0, 1); (0, 2); (0, 3); (1, 4); (2, 5); (3,5); (4,5)])
+	
+	let example_graphe4 = read_graph_and_payloads 6 (fst example_graph4) (snd example_graph4) ([] : (int * int * unit) list)
+	
+	let example_graphe3 = read_graph_and_payloads 5 (fst example_graph3) (snd example_graph3) ([] : (int * int * unit) list)
+	
+	let example_graphe2 = read_graph_and_payloads 6 (fst example_graph2) (snd example_graph2) ([] : (int * int * unit) list)
+	 
+	let example_graphe1 = read_graph_and_payloads 4 (fst example_graph1) (snd example_graph1) ([] : (int * int * unit) list)
+	 *)
+	
 (* let example_graphe = read_graph_and_payloads 11 (fst example_graph) (snd example_graph) ([] : (int * int * unit) list) 
 
 let sentinel_of_example = sentinel_tree (0, example_graphe);;
