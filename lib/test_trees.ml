@@ -28,6 +28,13 @@ let example_graph =
 	([|"a"; "b"; "c";  "d"; "e"; "f"|],
 	[(0, 1); (0, 2); (0, 3); (1, 4); (2, 5); (3,5); (4,5)])
 	
+	let example_graph5 = 
+	([|"0"; "1"; "2";  "3"; "4"; "5"; "6"; "7"; "8"|],
+	[(0, 1); (1, 2); (2, 3); (3, 4); (3, 5); (3,6); (4,7); (7,8); (4,8); (5,8); (6,8)])
+	
+	let example_graphe5 = read_graph_and_payloads 9 (fst example_graph5) (snd example_graph5) ([] : (int * int * unit) list)
+	let sentinel_of_example = sentinel_tree (0, example_graphe5);;
+	
 	let example_graphe4 = read_graph_and_payloads 6 (fst example_graph4) (snd example_graph4) ([] : (int * int * unit) list)
 	
 	let example_graphe3 = read_graph_and_payloads 5 (fst example_graph3) (snd example_graph3) ([] : (int * int * unit) list)
