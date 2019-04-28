@@ -64,6 +64,7 @@ let add_num (ls : expr list) =
     | [] -> acc
     | Num (x) :: t -> walk t (acc + x)
     | Add :: t -> walk t acc
+    | Multi :: t -> walk t acc
   in
   walk ls 0;;
 
