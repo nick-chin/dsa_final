@@ -14,7 +14,7 @@ module GraphSentinel = struct
   open Distance
   open DLLBasedQueue
 
-  type color = White | Gray | Black
+  type color = White | Black
 
   let sentinel_tree ((root: int), g) =
     let color_map = mk_new_table (v_size g) in
@@ -32,7 +32,7 @@ module GraphSentinel = struct
     (* Note that s is the root *)
 
     (* Make color of s gray *)
-    insert color_map s Gray;
+    insert color_map s Black;
     (* Make distance of s Finite 0 *)
     insert distance_map s (Finite 0);
     (* Make parent of s the Root *)
@@ -54,10 +54,10 @@ module GraphSentinel = struct
           if v_color = White
           then
             begin
-              insert color_map v Gray;
+              insert color_map v Black;
               insert distance_map v ((get_exn @@ get distance_map u) + Finite 1);
               insert parent_map v u;
-              enqueue q v;
+              enqueue q v
             end
           else
             begin
@@ -69,7 +69,7 @@ module GraphSentinel = struct
               then
                 for _ = 1 to ((int_of_dist @@ dist_v) - (int_of_dist @@ dist_u)) do
 	          v' := get parent_map (get_exn !v')
-                done;
+                done
               else if dist_v < dist_u
               then
                 for _ = 1 to ((int_of_dist @@ dist_u) - (int_of_dist @@ dist_v)) do
@@ -81,7 +81,7 @@ module GraphSentinel = struct
               done;
               insert parent_map v (get_exn !v');
               insert distance_map v (Finite 1 + (get_exn @@ get distance_map (get_exn !v')))
-            end
+            end);
       insert color_map u Black;
     done in
 
@@ -200,10 +200,13 @@ let gen_rnd_root_graphviz n =
 
 
 (*Tests by generating random Paths*)
-open GraphSentinel
-open NodeTable
 
 (*Depth First Search Modified because there will only be one root*)
+
+module DFSRooted = struct
+  open NodeTable
+
+  type color = White | Gray | Black
 
 let rec dfs_changed g root =
   let color_map = mk_new_table (v_size g) in
@@ -241,6 +244,7 @@ let rec dfs_changed g root =
   in
   dfs_visit root;
   (!roots, tree_map, time_map, !has_cycles)
+end
 
 
 (*Gives random element from a list*)
@@ -253,11 +257,13 @@ let randomelement l =
 (* Generates random path in a rooted from the root to any other node*)
 
 let gen_path_list (root, g) =
+  let open DFSRooted in
+  let open NodeTable in
   let a = dfs_changed g root in
   let sec t = match t with
       (_, b, _, _) -> b in
   let table = sec a in
-  let path_current = ref ( get_exn @@ get table root) in
+  let path_current = ref (get_exn @@ get table root) in
   let path_list = ref [root] in
   while !path_current  != [] do
     let rand = randomelement !path_current in
@@ -272,6 +278,7 @@ let gen_path_list (root, g) =
 
 
 let gen_strict_sentinels a root table  =
+  let open NodeTable in
   let sentinel = ref (get_exn @@ get table a) in
   let sentinel_list = ref [!sentinel] in
   while !sentinel != root do
@@ -283,7 +290,10 @@ let gen_strict_sentinels a root table  =
 
 (*Test for sentinel property *)
 
-let test_for_sentinel_property (root, g) n=
+
+open GraphSentinel
+
+let test_for_sentinel_property (root, g) n =
   let success = ref true in
   for i= 0 to (Random.int n) do
     let list_paths = gen_path_list (root, g) in
@@ -291,7 +301,7 @@ let test_for_sentinel_property (root, g) n=
       match list_of_path with
       | [] -> success := true && !success
       | h::t-> let sentinels_of_h = gen_strict_sentinels h root (snd @@ sentinel_tree (root, g)) in
-      (List.iter (fun x -> x;
+      (List.iter (fun x ->
                      success := !success && (List.mem x list_of_path)) sentinels_of_h) in
     check_sentinel_property_each list_paths
   done;
