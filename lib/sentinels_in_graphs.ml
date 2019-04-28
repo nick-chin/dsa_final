@@ -1,13 +1,13 @@
 open Week_01
 open Week_02
 open Week_06
-open Week_13_Paths
-open Week_12_Graphs
-open Week_13_Reachability
 open Week_12_BST
+open Week_12_Graphs
+open Week_13_Paths
+open Week_13_Reachability
 open BinarySearchTree
 open LinkedGraphs
-
+   
 
 module GraphSentinel = struct
   open NodeTable
@@ -17,7 +17,6 @@ module GraphSentinel = struct
   type color = White | Gray | Black
 
   let sentinel_tree ((root: int), g) =
-
     let color_map = mk_new_table (v_size g) in
     let parent_map = mk_new_table (v_size g) in
     let distance_map = mk_new_table (v_size g) in
@@ -25,72 +24,68 @@ module GraphSentinel = struct
 
     (* Make all nodes white *)
     List.iter  (fun n -> insert color_map n White) all_nodes;
-    (*Make the parent of each node None*)
+    (* Make the parent of each node the root by default *)
+    (* Parent is defined as immediate sentinel for every node besides the root, which is updated later *)
     List.iter  (fun n -> insert parent_map n root) all_nodes;
 
      let helper g s =
-    (*Make color of s gray*)
+    (* Note that s is the root *)
+
+    (* Make color of s gray *)
     insert color_map s Gray;
-    (*Make distance of s Finite 0)*)
+    (* Make distance of s Finite 0 *)
     insert distance_map s (Finite 0);
-    (*Make parent of S the root*)
+    (* Make parent of s the Root *)
     insert parent_map s root;
 
 
     (* Make a queue *)
     let q = mk_queue (v_size g) in
-    (*Enuqueue (q,s)*)
+    (* Enuqueue (q, s) *)
     enqueue q s;
 
-
     while not (is_empty q) do
-     let u = get_exn (dequeue q) in
+      let u = get_exn (dequeue q) in
 
-(*Perform action on all adjacent vertices*)
-
-(*For all adjacent vertices of u, we check for the immediate sentinel*)
-    get_succ g u |> List.iter (fun v ->
-        let v_color = get_exn @@ get color_map v in
-        if v_color = White
-        then begin
-          insert color_map v Gray;
-          insert distance_map v ((get_exn @@ get distance_map u) + Finite 1);
-          insert parent_map v u;
-          enqueue q v;
-          end
-        else if v_color = Gray
-        then begin
-            let v' = ref (get parent_map v) in
-            let u' = ref (get parent_map u) in
-            while get_exn !v' <> get_exn !u' do
-				insert parent_map v (get_exn @@ get parent_map (get_exn !v'));
-				v' := get parent_map v;
-				u' := get parent_map (get_exn !u')
-            done;
-            insert distance_map v (Finite 1 + (get_exn @@ get distance_map (get_exn !v')))
-          end
-        else if v_color = Black
-        then begin
-			let dist_v = int_of_dist @@ get_exn @@ get distance_map v in
-			let dist_u = int_of_dist @@ get_exn @@ get distance_map u in
-			let v' = ref (get parent_map v) in
-            let u' = ref (get parent_map u) in
-			for _ = 1 to dist_u - dist_v do
-				u' := get parent_map (get_exn !u')
-			done;
-            while get_exn !v' <> get_exn !u' do
-				insert parent_map v (get_exn @@ get parent_map (get_exn !v'));
-				v' := get parent_map v;
-				u' := get parent_map (get_exn !u')
-            done;
-			insert distance_map v (Finite 1 + (get_exn @@ get distance_map (get_exn !v')))
-          end);
-               insert color_map u Black;
+      (* Perform action on all adjacent vertices *)
+      (* We follow the process depending on the color of the sucessor *)
+      get_succ g u |> List.iter (fun v ->
+          let v_color = get_exn @@ get color_map v in
+          if v_color = White
+          then
+            begin
+              insert color_map v Gray;
+              insert distance_map v ((get_exn @@ get distance_map u) + Finite 1);
+              insert parent_map v u;
+              enqueue q v;
+            end
+          else
+            begin
+              let dist_v =  get_exn @@ get distance_map v in
+              let dist_u =  get_exn @@ get distance_map u in
+              let v' = ref (get parent_map v) in
+              let u' = ref (get parent_map u) in
+              if dist_v > dist_u
+              then
+                for _ = 1 to ((int_of_dist @@ dist_v) - (int_of_dist @@ dist_u)) do
+	          v' := get parent_map (get_exn !v')
+                done;
+              else if dist_v < dist_u
+              then
+                for _ = 1 to ((int_of_dist @@ dist_u) - (int_of_dist @@ dist_v)) do
+	          u' := get parent_map (get_exn !u')
+                done;
+              while get_exn !v' <> get_exn !u' do
+                v' := get parent_map (get_exn !v');
+		u' := get parent_map (get_exn !u');
+              done;
+              insert parent_map v (get_exn !v');
+              insert distance_map v (Finite 1 + (get_exn @@ get distance_map (get_exn !v')))
+            end
+      insert color_map u Black;
     done in
 
-
-(* We perform the function on the root*)
-
+     (* Run the helper function in our root*)
      helper g root;
      (all_nodes, parent_map)
 
@@ -108,29 +103,30 @@ module GraphSentinel = struct
       match ls with
       | [] -> ()
       | h :: t ->
-         let dst = get_exn @@ get p_map h in
-         if dst = h
-         then ()
-         else add_edge g dst h;
-         add_edges t
+        let dst = get_exn @@ get p_map h in
+        if dst = h
+        then ()
+        else add_edge g dst h;
+        add_edges t
     in
     add_nodes nodes;
     add_edges nodes;
     g
-
-end
-
+  end
 
 
 
-(*Procedure to generate random graph - helper functions*)
+
+
+(*Procedure to generate random graph*)
+
 
 let gen_nodes n = let arr = Array.make n "0" in
-let root = (Random.int (n -1)) in
-for i = 0 to n - 1 do
-arr.(i) <- string_of_int(i);
-done;
-(arr, root);;
+  let root = (Random.int (n -1)) in
+  for i = 0 to n - 1 do
+    arr.(i) <- string_of_int(i);
+  done;
+  (arr, root);;
 
 let gen_edges n =
   let size = Random.int (n* n) in
@@ -159,15 +155,15 @@ let ensure_reachability graph n root =
   let max = n - 1 in
   let all_nodes = get_nodes graph in
   List.iter (fun x -> if x = root then () else
-  (begin
-    while not (is_reachable graph root x) do
-      (*let an_edge = (Random.int max, Random.int max) in
-      add_edge graph (fst (an_edge)) (snd (an_edge));*)
-      let an_edge = (root, Random.int max) in
-         add_edge graph (fst (an_edge)) (snd (an_edge));
-         add_edge graph (snd (an_edge)) x;
-      done;
-    end)) all_nodes
+                (begin
+                  while not (is_reachable graph root x) do
+                    (*let an_edge = (Random.int max, Random.int max) in
+                      add_edge graph (fst (an_edge)) (snd (an_edge));*)
+                    let an_edge = (root, Random.int max) in
+                    add_edge graph (fst (an_edge)) (snd (an_edge));
+                    add_edge graph (snd (an_edge)) x;
+                  done;
+                end)) all_nodes;;
 
 
 (*Procedure to generate random rooted graph*)
@@ -181,7 +177,7 @@ let gen_random_rooted_graph n =
   addnodes nodes g;
   addedges edges g;
   ensure_reachability g n root;
-  (root, g)
+  (root, g);;
 
 
 (*Procedure to generate random rooted graph with weights*)
@@ -200,17 +196,14 @@ let gen_rnd_root_graphviz n =
   let edges' = edges g' in
   let weights = List.map (fun (x, y) -> (x, y, 1)) edges' in
   Printf.printf "Root is %d" root;
-  (root, read_graph_and_payloads n nodes edges' weights)
+  (root, read_graph_and_payloads n nodes edges' weights);;
 
 
 (*Tests by generating random Paths*)
 open GraphSentinel
 open NodeTable
 
-(*Depth First Search adapted for a rooted graph*)
-
-
-
+(*Depth First Search Modified because there will only be one root*)
 
 let rec dfs_changed g root =
   let color_map = mk_new_table (v_size g) in
@@ -246,23 +239,23 @@ let rec dfs_changed g root =
     let u_out = !time in
     insert time_map u (u_in, u_out)
   in
- dfs_visit root;
-(!roots, tree_map, time_map, !has_cycles)
+  dfs_visit root;
+  (!roots, tree_map, time_map, !has_cycles)
 
 
-(*Gives random element from a list- saves space in the main function*)
+(*Gives random element from a list*)
 
 
 let randomelement l =
     List.nth l (Random.int (List.length l))
 
 
-(* Generates random path in a rooted graph from the root to any other node by doing 1 round of dfs*)
+(* Generates random path in a rooted from the root to any other node*)
 
 let gen_path_list (root, g) =
   let a = dfs_changed g root in
   let sec t = match t with
-  (_, b, _, _) -> b in
+      (_, b, _, _) -> b in
   let table = sec a in
   let path_current = ref ( get_exn @@ get table root) in
   let path_list = ref [root] in
@@ -271,7 +264,7 @@ let gen_path_list (root, g) =
     path_list := rand:: !path_list;
     path_current := get_exn @@ get table rand;
   done;
-!path_list
+  !path_list
 
 
 
@@ -303,5 +296,30 @@ let test_for_sentinel_property (root, g) n=
     check_sentinel_property_each list_paths
   done;
   !success
-  
-  
+
+let example_graph =
+    	([|"a"; "b"; "c"; "d"; "e"; "f"; "g"; "h"; "i"; "j"; "k"|],
+    	[(0, 1); (1, 2); (2, 3); (2, 4); (2, 5); (3, 4); (3, 6); (4, 7); (4, 8);
+    	(5, 9); (6, 3); (7, 10); (8, 3); (9, 1); (9, 2); (10, 2)])
+
+let example_graphe = read_graph_and_payloads 11 (fst example_graph) (snd example_graph) ([] : (int * int * unit) list)
+
+let sentinel_of_example = sentinel_tree (0, example_graphe)
+
+
+let test_for_example_graph () =
+  let open NodeTable in
+  get_exn @@ get (snd sentinel_of_example) 1 == 0 &&
+  get_exn @@ get (snd sentinel_of_example) 2 == 1 &&
+  get_exn @@ get (snd sentinel_of_example) 3 == 2 &&
+  get_exn @@ get (snd sentinel_of_example) 4 == 2 &&
+  get_exn @@ get (snd sentinel_of_example) 5 == 2 &&
+  get_exn @@ get (snd sentinel_of_example) 6 == 3 &&
+  get_exn @@ get (snd sentinel_of_example) 7 == 4 &&
+  get_exn @@ get (snd sentinel_of_example) 8 == 4 &&
+  get_exn @@ get (snd sentinel_of_example) 9 == 5 &&
+  get_exn @@ get (snd sentinel_of_example) 10 == 7
+
+
+
+let final_test () = (test_for_sentinel_property (gen_random_rooted_graph 6) 4) && (test_for_sentinel_property (0, (example_graphe)) 4) && test_for_example_graph ()
