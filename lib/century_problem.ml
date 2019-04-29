@@ -19,61 +19,47 @@ let b = [Num (1); Add; Num (2); Multi; Num (3); Add;
          Add; Num (8); Add; Num (9)];;
 
 
-
-(* Dealing with multiple digits *)
-
-let conjoin_num (ls : expr list) =
-  let rec walk l acc_num acc_ls  =
-    match l with
-    | [] -> Num (acc_num) :: acc_ls
-    | Num (x) :: t -> walk t (10 * acc_num + x) acc_ls
-    | Add :: t -> walk t 0 (Add :: Num (acc_num) :: acc_ls)
-    | Multi :: t -> walk t 0 (Multi :: Num (acc_num) :: acc_ls)
+let eval_expr ls =  
+  (* Dealing with multiple digits *)
+  let conjoin_num (ls : expr list) =
+    let rec walk l acc_num acc_ls  =
+      match l with
+      | [] -> Num (acc_num) :: acc_ls
+      | Num (x) :: t -> walk t (10 * acc_num + x) acc_ls
+      | Add :: t -> walk t 0 (Add :: Num (acc_num) :: acc_ls)
+      | Multi :: t -> walk t 0 (Multi :: Num (acc_num) :: acc_ls)
+    in
+    walk ls 0 []
   in
-  walk ls 0 [];;
-
-conjoin_num a;;
-
-
-
-(* Evaluating multiplication *)
-
-let multi_num (ls : expr list) =
-  let rec walk l acc =
-    match l with
-    | [] -> acc
-    | Num (x) :: t -> walk t (Num (x) :: acc)
-    | Add :: t -> walk t (Add :: acc)
-    | Multi :: t ->
-       let rol = List.tl t in
-       let Num (x) = List.hd t in
-       let Num (y) = List.hd acc in
-       walk rol (Num (x * y) :: (List.tl acc))
+  
+  (* Evaluating multiplication *)
+  let multi_num (ls : expr list) =
+    let rec walk l acc =
+      match l with
+      | [] -> acc
+      | Num (x) :: t -> walk t (Num (x) :: acc)
+      | Add :: t -> walk t (Add :: acc)
+      | Multi :: t ->
+         let rol = List.tl t in
+         let Num (x) = List.hd t in (* Value will always be Num (_) *)
+         let Num (y) = List.hd acc in (* Value will always be Num (_) *)
+         walk rol (Num (x * y) :: (List.tl acc))
+    in
+    walk ls []
   in
-  walk ls [];;
-
-multi_num @@ conjoin_num a;;
-
-
-
-(* Evaluating addition *)
-
-let add_num (ls : expr list) =
-  let rec walk l acc =
-    match l with
-    | [] -> acc
-    | Num (x) :: t -> walk t (acc + x)
-    | Add :: t -> walk t acc
-    | Multi :: t -> walk t acc
+  
+  (* Evaluating addition *)
+  let add_num (ls : expr list) =
+    let rec walk l acc =
+      match l with
+      | [] -> acc
+      | Num (x) :: t -> walk t (acc + x)
+      | Add :: t -> walk t acc
+      | Multi :: t -> walk t acc
+    in
+    walk ls 0
   in
-  walk ls 0;;
 
-add_num @@ multi_num @@ conjoin_num a;;
-add_num @@ multi_num @@ conjoin_num b;;
-
-(* All 3 in proper order *)
-
-let eval_expr ls =
   add_num @@ multi_num @@ conjoin_num ls;;
 
 
