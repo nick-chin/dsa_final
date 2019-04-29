@@ -173,3 +173,21 @@ let generate i_list =
 
   traverse_tree 1 arr a_len;
   !expr_big_list;;
+
+let random_digits n =
+  let ls = ref [] in
+  for _ = 1 to n do
+    ls := (Random.int 8 + 1) :: !ls
+  done;
+  !ls;;
+
+let time f x =
+  let t = Sys.time () in
+  let fx = f x in
+  Printf.printf "Execution elapsed time: %f sec\n"
+    (Sys.time () -. t);
+  fx;;
+
+let a = random_digits 13;;
+time generate a;;
+time gen_candidates a;;
