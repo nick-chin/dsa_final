@@ -19,6 +19,7 @@ let b = [Num (1); Add; Num (2); Multi; Num (3); Add;
          Add; Num (8); Add; Num (9)];;
 
 
+
 let eval_expr ls =  
   (* Dealing with multiple digits *)
   let conjoin_num (ls : expr list) =
@@ -50,16 +51,43 @@ let eval_expr ls =
   
   (* Evaluating addition *)
   let add_num (ls : expr list) =
-    let rec walk l acc =
+    let rec walk l a =
       match l with
-      | [] -> acc
-      | Num (x) :: t -> walk t (acc + x)
-      | Add :: t -> walk t acc
-      | Multi :: t -> walk t acc
+      | [] -> a
+      | Num (x) :: t -> walk t (a + x)
+      | Add :: t -> walk t a
+      | Multi :: t -> walk t a
     in
     walk ls 0
   in
 
+  (* Validating list *)
+  let validate ls =
+    let rec walk l acum =
+      match l with
+      | [] -> ();
+      | Num (x) :: t -> walk t 0
+      | Add :: t | Multi :: t ->
+         if acum = 1 then raise (Failure "Invalid expression list")
+         else walk t 1
+    in
+    let check_back l =
+      let len = List.length l in
+      match List.nth l (len - 1) with
+      | Add | Multi -> raise (Failure "Invalid expression list");
+      | _ -> ()
+    in
+    let check_front l =
+      match List.hd ls with
+      | Add | Multi -> raise (Failure "Invalid expression list");
+      | _ -> ()
+    in
+    walk ls 0;
+    check_front ls;
+    check_back ls
+  in
+
+  validate ls;
   add_num @@ multi_num @@ conjoin_num ls;;
 
 
