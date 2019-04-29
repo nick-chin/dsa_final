@@ -131,3 +131,45 @@ let test_century_candidates _ =
        confirm t
   in
   confirm ls;;
+
+let generate i_list =
+  let expr_big_list = ref [] in
+  let l_len = List.length i_list in
+  if l_len = 0 then raise (Failure "List must be at least length 1");
+  let a_len = l_len * 2 - 1 in
+  let arr = Array.make a_len 0 in
+  for i = 0 to a_len - 1 do
+    if i mod 2 = 0
+    then arr.(i) <- List.nth i_list (i / 2);
+  done;
+
+  let array_to_expr_list arr =
+    let ls = ref [] in
+    let len = Array.length arr in
+    for i = len - 1 downto 0 do
+      match arr.(i) with
+      | -1 -> ls := Add :: !ls
+      | -2 -> ls := Multi :: !ls
+      | -3 -> ()
+      | x -> ls := Num (x) :: !ls
+    done;
+    !ls
+  in
+
+  let rec traverse_tree depth array len =
+    if depth < len 
+    then
+      begin
+        arr.(depth) <- (-1);
+        traverse_tree (depth + 2) arr len;
+        arr.(depth) <- (-2);
+        traverse_tree (depth + 2) arr len;
+        arr.(depth) <- (-3);
+        traverse_tree (depth + 2) arr len;
+      end
+    else
+      expr_big_list := array_to_expr_list arr :: !expr_big_list
+  in
+
+  traverse_tree 1 arr a_len;
+  !expr_big_list;;
