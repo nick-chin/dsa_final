@@ -7,6 +7,11 @@ open Week_13_Paths
 open Week_13_Reachability
 open BinarySearchTree
 open LinkedGraphs
+
+
+(***************************************************************)
+(* Part 1: Generating a Sentinel Tree from a rooted Graph      *)
+(***************************************************************)
    
 
 module GraphSentinel = struct
@@ -117,6 +122,11 @@ module GraphSentinel = struct
 
 
 
+(***************************************************************)
+(* Part 2: Generating Random Rooted Directed Graphs            *)
+(***************************************************************)
+
+
 
 (*Procedure to generate random graph*)
 
@@ -166,7 +176,7 @@ let ensure_reachability graph n root =
                 end)) all_nodes;;
 
 
-(*Procedure to generate random rooted graph*)
+(*Main Function: Procedure to generate random rooted graph*)
 
 let gen_random_rooted_graph n =
   let g = mk_graph() in
@@ -180,28 +190,14 @@ let gen_random_rooted_graph n =
   (root, g);;
 
 
-(*Procedure to generate random rooted graph with weights*)
 
-let gen_rnd_root_graphviz n =
-  let g = mk_graph() in
-  let node_root = gen_nodes n in
-  let nodes =  fst (node_root) in
-  let root = snd (node_root) in
-  let edges = gen_edges n in
-  addnodes nodes g;
-  addedges edges g;
-  ensure_reachability g n root;
-  let open AdjacencyGraphs in
-  let g' = to_adjacency_graph g in
-  let edges' = edges g' in
-  let weights = List.map (fun (x, y) -> (x, y, 1)) edges' in
-  Printf.printf "Root is %d" root;
-  (root, read_graph_and_payloads n nodes edges' weights);;
-
+(***************************************************************)
+(* Part 3: Tests for our Main Algorithm                        *)
+(***************************************************************)
 
 (*Tests by generating random Paths*)
 
-(*Depth First Search Modified because there will only be one root*)
+(*Depth First Search Modified: suitable for a rooted graph*)
 
 module DFSRooted = struct
   open NodeTable
@@ -249,7 +245,6 @@ end
 
 (*Gives random element from a list*)
 
-
 let randomelement l =
     List.nth l (Random.int (List.length l))
 
@@ -274,7 +269,7 @@ let gen_path_list (root, g) =
 
 
 
-(* Checks the sentinels of a given node, say a, in a graph*)
+(* Returns the sentinels of a given node, say a, in a graph, as a list*)
 
 
 let gen_strict_sentinels a root table  =
@@ -289,7 +284,6 @@ let gen_strict_sentinels a root table  =
 
 
 (*Test for sentinel property *)
-
 
 open GraphSentinel
 
@@ -329,7 +323,6 @@ let test_for_example_graph () =
   get_exn @@ get (snd sentinel_of_example) 8 == 4 &&
   get_exn @@ get (snd sentinel_of_example) 9 == 5 &&
   get_exn @@ get (snd sentinel_of_example) 10 == 7
-
 
 
 let final_test () = (test_for_sentinel_property (gen_random_rooted_graph 6) 4) && (test_for_sentinel_property (0, (example_graphe)) 4) && test_for_example_graph ()
