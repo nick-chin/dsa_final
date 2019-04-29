@@ -105,7 +105,9 @@ let gen_candidates i_list =
 (* Finding correct candidates with given digits list and set target *)
 
 let candidates ls target = 
-  List.filter (fun x -> eval_expr x = target) (gen_candidates ls);;
+  let list = List.filter (fun x -> eval_expr x = target) (gen_candidates ls) in
+  List.iter print_expr list;
+  list;;
 
 let test_century_candidates _ =
   let ls = candidates [1;2;3;4;5;6;7;8;9] 100 in
