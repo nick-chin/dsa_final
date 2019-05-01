@@ -241,6 +241,41 @@ let choose_next_move room p preferences lighted_squares =
 
 (* greedy & fixed order *)
 let get_watchman_path room =
+  let open Astar in
+  let solve field init final =
+  match (init, final) with
+  | start, goal ->
+    let cost p q =
+      let Point (i,j) = p in
+      let Point (k,l) = q in 
+      Float.to_int(Float.abs (i-.k) +. Float.abs (j-.l)) in
+    let problem = {cost; goal; get_next_states = get_next_moves field} in
+    search problem start
+  in
+  let closest_square lst current =
+  let dst = ref None in
+  let res = ref None in
+  let rec find_closest_square ls = 
+    match ls with
+    | [] -> ()
+    | h :: t -> if get lighted_squares h <> None then find_closest_square t else 
+    let Point (i,j) = h in
+    let Point (k,l) = current in
+    let dst' = Float.to_int(Float.abs (i-.k) +. Float.abs (j-.l))
+    if !dst = None then 
+    begin
+      dst := Some dst';
+      res := Some h
+    end
+    else if dst' < get_exn (!dst) then
+    begin
+      dst := Some dst';
+      res := Some h
+    end
+    in 
+    find_closest_square lst;
+    !res
+  in
   let p = ref (Point (0., 0.)) in
   let path = ref [!p] in
   let neighbours = ref (get_lightable_neighbours room !p) in
@@ -250,20 +285,30 @@ let get_watchman_path room =
   let lighted_squares = mk_new_table 5 in
   List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours));
   let preferences = [|"up"; "right"; "down"; "left"|] in
-  while (!(lighted_squares.size) < num_of_squares) do
+  while (!(lighted_squares.size) < num_of_squares) do (* when the room is not fully lit *)
     let next_move = choose_next_move room !p preferences lighted_squares in
-    if next_move <> None
+    if next_move = None
     then
+    begin
+      let c = closest_square all_squares !p in
+      if c <> None 
+      then begin
+        let closest_path = solve room (get_exn c) !p in
+        List.iter (fun x -> 
+          p := get_exn x;
+          neighbours := get_lightable_neighbours room !p;
+          path := !p :: !path;
+          List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours))) closest_path
+      end
+      else ()
+    end
+    else
       begin
         p := get_exn next_move;
         neighbours := get_lightable_neighbours room !p;
         path := !p :: !path;
         List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours));
       end
-    else
-      (* TBD *)
-      (* if we are trapped, restart procedure at an unlighted square *)
-      ();
   done;
   List.rev !path;;
 
