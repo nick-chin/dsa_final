@@ -4,5 +4,5 @@
   (wrapped false)
   (inline_tests)                
   (preprocess (pps ppx_inline_test ppx_expect))
-  (libraries ysc2229-part-one ysc2229-part-two core batteries ysc2229-geometry)
+  (libraries ysc2229-part-one ysc2229-part-two core batteries ysc2229-geometry graphics)
   (synopsis "Final project for YSC2229"))
