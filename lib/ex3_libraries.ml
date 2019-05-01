@@ -1065,6 +1065,495 @@ end
 module HashTableIntKey = ListBasedHashTable 
   (struct type t = int let hash i = i end)
 
+(* open Week_08_HashTable;; *)
+module type HashTable = sig
+  type key
+  type 'v hash_table
+  val mk_new_table : int -> (key * 'v) hash_table 
+  val insert : (key * 'v) hash_table -> key -> 'v -> unit
+  val get : (key * 'v) hash_table -> key -> 'v option
+  val remove : (key * 'v) hash_table -> key -> unit
+  val print_hash_table : 
+    (key -> string) ->
+    ('v -> string) ->
+    (key * 'v) hash_table -> unit
+end;;
+
+module HashTableTester(H : HashTable) = struct
+
+  module MyHT = H
+  open MyHT
+
+  let mk_test_table_from_array_length a m = 
+    let n = Array.length a in
+    let ht = mk_new_table m in
+    for i = 0 to n - 1 do
+      insert ht a.(i) a.(i)
+    done;
+    ht
+
+  let test_table_get ht a = 
+    let len = Array.length a in
+    for i = 0 to len - 1 do
+      let e = get ht a.(i) in
+      assert (e <> None);
+      (* let x = Week_01.get_exn e in *)
+      let x = get_exn e in
+      assert (x = a.(i))
+    done;
+    true
+end;;
+
+module type KeyType = sig
+  type t
+end;;
+
+module SimpleListBasedHashTable(K: KeyType) = struct
+  type key = K.t
+
+  type 'v hash_table = {
+    buckets : 'v list array;
+    capacity : int; 
+  }
+
+  let mk_new_table cap = 
+    let buckets = Array.make cap [] in
+    {buckets = buckets;
+     capacity = cap}
+  
+  let insert ht k v = 
+    let hs = Hashtbl.hash k in
+    let bnum = hs mod ht.capacity in 
+    let bucket = ht.buckets.(bnum) in
+    let clean_bucket = 
+      List.filter (fun (k', _) -> k' <> k) bucket in
+    ht.buckets.(bnum) <- (k, v) :: clean_bucket
+
+  let get ht k = 
+    let hs = Hashtbl.hash k in
+    let bnum = hs mod ht.capacity in 
+    let bucket = ht.buckets.(bnum) in
+    let res = List.find_opt (fun (k', _) -> k' = k) bucket in
+    match res with 
+    | Some (_, v) -> Some v
+    | _ -> None
+
+  (* Slow remove - introduce for completeness *)
+  let remove ht k = 
+    let hs = Hashtbl.hash k in
+    let bnum = hs mod ht.capacity in 
+    let bucket = ht.buckets.(bnum) in
+    let clean_bucket = 
+      List.filter (fun (k', _) -> k' <> k) bucket in
+    ht.buckets.(bnum) <- clean_bucket
+
+  let print_hash_table ppk ppv ht = 
+    let open Printf in
+    print_endline @@ sprintf "Capacity: %d" (ht.capacity);
+    print_endline "Buckets:";
+    let buckets = (ht.buckets) in
+    for i = 0 to (ht.capacity) - 1 do
+      let bucket = buckets.(i) in
+      if bucket <> [] then (
+        (* Print bucket *)
+        let s = List.fold_left 
+            (fun acc (k, v) -> acc ^ (sprintf "(%s, %s); ") (ppk k) (ppv v)) "" bucket in
+        printf "%d -> [ %s]\n" i s)
+    done
+end;;
+
+module IntString = struct type t = int * string end;;
+module SHT = SimpleListBasedHashTable(IntString);;
+module SimpleHTTester = HashTableTester(SHT);;
+
+let pp_kv (k, v) = Printf.sprintf "(%d, %s)" k v;;
+
+module ResizableListBasedHashTable(K : KeyType) = struct
+  type key = K.t
+
+  type 'v hash_table = {
+    buckets : 'v list array ref;
+    size : int ref; 
+    capacity : int ref; 
+  }
+
+  let mk_new_table cap = 
+    let buckets = Array.make cap [] in
+    {buckets = ref buckets;
+     capacity = ref cap;
+     size = ref 0}
+
+  let rec insert ht k v = 
+    let hs = Hashtbl.hash k in
+    let bnum = hs mod !(ht.capacity) in 
+    let bucket = !(ht.buckets).(bnum) in
+    let clean_bucket = 
+      List.filter (fun (k', _) -> k' <> k) bucket in
+    let new_bucket = (k, v) :: clean_bucket in
+    !(ht.buckets).(bnum) <- new_bucket;
+    (* Increase size *)
+    (if List.length bucket < List.length new_bucket
+    then ht.size := !(ht.size) + 1);
+    (* Resize *)
+    if !(ht.size) > !(ht.capacity) + 1
+    then resize_and_copy ht
+
+  and resize_and_copy ht =
+    let new_capacity = !(ht.capacity) * 2 in
+    let new_buckets = Array.make new_capacity [] in
+    let new_ht = {
+      buckets = ref new_buckets;
+      capacity = ref new_capacity;
+      size = ref 0;
+    } in
+    let old_buckets = !(ht.buckets) in
+    let len = Array.length old_buckets in 
+    for i = 0 to len - 1 do
+      let bucket = old_buckets.(i) in
+      List.iter (fun (k, v) -> insert new_ht k v) bucket
+    done;
+    ht.buckets := !(new_ht.buckets);
+    ht.capacity := !(new_ht.capacity);
+    ht.size := !(new_ht.size)
+      
+     
+  let get ht k = 
+    let hs = Hashtbl.hash k in
+    let bnum = hs mod !(ht.capacity) in 
+    let bucket = !(ht.buckets).(bnum) in
+    let res = List.find_opt (fun (k', _) -> k' = k) bucket in
+    match res with 
+    | Some (_, v) -> Some v
+    | _ -> None
+
+  (* Slow remove - introduce for completeness *)
+  let remove ht k = 
+    let hs = Hashtbl.hash k in
+    let bnum = hs mod !(ht.capacity) in 
+    let bucket = !(ht.buckets).(bnum) in
+    let clean_bucket = 
+      List.filter (fun (k', _) -> k' <> k) bucket in
+    !(ht.buckets).(bnum) <- clean_bucket;
+    (if List.length bucket > List.length clean_bucket
+    then ht.size := !(ht.size) - 1);
+    assert (!(ht.size) >= 0)
+
+
+  let print_hash_table ppk ppv ht = 
+    let open Printf in
+    print_endline @@ sprintf "Capacity: %d" !(ht.capacity);
+    print_endline @@ sprintf "Size:     %d" !(ht.size);
+    print_endline "Buckets:";
+    let buckets = !(ht.buckets) in
+    for i = 0 to !(ht.capacity) - 1 do
+      let bucket = buckets.(i) in
+      if bucket <> [] then (
+        (* Print bucket *)
+        let s = List.fold_left 
+            (fun acc (k, v) -> acc ^ (sprintf "(%s, %s); ") (ppk k) (ppv v)) "" bucket in
+        printf "%d -> [ %s]\n" i s)
+    done 
+end;;
+
+module RHT = ResizableListBasedHashTable(IntString);;
+module ResizableHTTester = HashTableTester(RHT);;
+
+(* open Week_12_BST;; *)
+module BinarySearchTree =
+  struct
+    type 'e tree_node = {
+        value : 'e;
+        parent  : 'e tree_node option ref;
+        left  : 'e tree_node option ref;
+        right  : 'e tree_node option ref;
+      }
+
+    type 'e tree = {
+        root : 'e tree_node option ref;
+        size : int ref
+      }
+
+    let left n = !(n.left)
+    let right n = !(n.right)
+    let parent n = !(n.parent)
+    let get_root t = !(t.root)
+    let get_size t = !(t.size)
+
+    let mk_node e = 
+      {value = e;
+       parent = ref None;
+       left = ref None;
+       right = ref None}
+        
+    let mk_tree _ = {root = ref None; size = ref 0}    
+                      
+    let map_option o f z = match o with
+      | None -> z
+      | Some n -> f n
+                    
+
+    (**********************************)
+    (*     2. Growing the tree        *)
+    (**********************************)
+                    
+    let insert t e =       
+      let rec insert_element n e = 
+        let m = mk_node e in
+        if e < n.value
+        then match left n with
+             | Some m -> insert_element m e
+             | None ->
+                m.parent := Some n;
+                n.left := Some m;
+                true
+        else if e > n.value
+        then match right n with
+             | Some m -> insert_element m e
+             | None ->
+                m.parent := Some n;
+                n.right := Some m;
+                true
+        else false
+      in
+      match !(t.root) with
+      | None -> (
+        t.root := Some (mk_node e);
+        t.size := 1;
+        true)
+      | Some n -> 
+         if insert_element n e
+         then (t.size := !(t.size) + 1; true)
+         else false
+                
+                
+    (**********************************)
+    (*     2.5 Tree invariant         *)
+    (**********************************)
+
+    let check_bst_inv t = 
+      let rec walk node p = 
+        (p node.value) &&
+          let res_left = match left node with
+            | None -> true
+            | Some l -> walk l (fun w -> p w && w <= node.value)
+          in
+          let res_right = match right node with
+            | None -> true
+            | Some r -> walk r (fun w -> p w && w >= node.value)
+          in
+          res_left && res_right
+      in
+      match !(t.root) with
+      | None -> true
+      | Some n -> walk n (fun _ -> true)
+
+    (**********************************)
+    (*     3. Printing a tree         *)
+    (**********************************)
+
+    let print_tree pp snum t = 
+      let print_node_with_spaces l s = 
+        for i = 0 to s - 1 do 
+          Printf.printf " "
+        done;
+        print_endline (pp l.value);
+      in
+
+      let rec walk s node = match node with
+        | None -> ()
+        | Some n -> begin
+            walk (s + snum) (right n);
+            print_node_with_spaces n s;
+            walk (s + snum) (left n);
+          end      
+      in
+      map_option (get_root t) (fun n -> walk 0 (Some n)) ()
+                 
+    (**********************************)
+    (*     4. Exploring the tree      *)
+    (**********************************)
+
+    let search t k = 
+      let rec walk k n = 
+        let nk = n.value in 
+        if k = nk then Some n
+        else if k < nk
+        then match left n with
+             | None -> None
+             | Some l -> walk k l
+        else match right n with
+             | None -> None
+             | Some r -> walk k r
+      in
+      map_option (get_root t) (walk k) None
+
+    (**********************************)
+    (* 5. Traversing a tree with DFS  *)
+    (**********************************)
+
+    open DLLBasedQueue
+
+    let depth_first_search_rec t = 
+      let rec walk q n =
+        enqueue q n.value;
+        (match left n with
+         | Some l -> walk q l
+         | None -> ());
+        (match right n with
+         | Some r -> walk q r
+         | None -> ());
+      in
+      let acc = (mk_queue 0) in
+      map_option (get_root t) (walk acc) ();
+      queue_to_list acc
+
+    let depth_first_search_loop t = 
+      let open ListBasedStack in
+      let loop stack q =
+        while not (is_empty stack) do
+          let n = get_exn @@ pop stack in
+          enqueue q n.value;
+          (match right n with
+           | Some r -> push stack r
+           | _ -> ());
+          (match left n with
+           | Some l -> push stack l
+           | _ -> ());
+        done
+      in
+      let acc = (mk_queue 0) in
+      let stack = mk_stack 0 in
+      (match get_root t with
+       | None -> ()
+       | Some n -> begin
+           push stack n;
+           loop stack acc;
+         end);      
+      queue_to_list acc
+
+    (**********************************)
+    (* 6. Traversing a tree with BFS  *)
+    (**********************************)
+
+    let breadth_first_search_loop t = 
+      let loop wlist q depth =
+        while not (is_empty wlist) do
+          let n = get_exn @@ dequeue wlist in
+          enqueue q n.value;
+          (match left n with
+           | Some l -> enqueue wlist l
+           | _ -> ());
+          (match right n with
+           | Some r -> enqueue wlist r
+           | _ -> ());
+        done
+      in
+      let acc = (mk_queue 0) in
+      let wlist = mk_queue 0 in
+      (match get_root t with
+       | None -> ()
+       | Some n -> begin
+           enqueue wlist n;
+           loop wlist acc 0;
+         end);      
+      queue_to_list acc
+
+    let elements t = breadth_first_search_loop t
+
+    (**********************************)
+    (* 7.  Finding a minimum node     *)
+    (**********************************)
+
+    let rec find_min_node n = 
+      match left n with
+      | Some m -> find_min_node m
+      | None -> n
+
+    (* Question: how to find a successor of a node in a tree? *)
+
+    (**********************************)
+    (* 8.    Deletion of an element   *)
+    (**********************************)
+
+    (* Replacing node U by (optional) node V in T. *)
+    let transplant t u v = 
+      (match parent u with
+       | None -> t.root := v
+       | Some p -> 
+          match left p with
+          | Some l when u == l -> p.left := v
+          | _ -> p.right := v);
+      (* Update parent of v *)
+      match v with 
+      | Some n -> n.parent := parent u
+      | _ -> ()
+
+    (* Deleting the a node z from tree *)
+    (* z must be in the tree *)
+    let delete_node t z = 
+      t.size := !(t.size) - 1;
+      if left z = None
+      then transplant t z (right z)
+      else if right z = None
+      then transplant t z (left z)
+      else
+        (* Finding the successor of `z` *)
+        let z_right_child = (get_exn @@ right z) in
+        let y = find_min_node z_right_child in
+        (* Fact: `y` has no left child *)
+
+        (if parent y <> None &&
+              z != get_exn @@ parent y
+         then 
+           (*  If y is not immediately under z,
+          replace y by its right subtree *)
+           let x = right y in
+           (transplant t y x;
+            y.right := right z;
+            (get_exn @@ right y).parent := Some y));
+
+        (* Now `y` replaces `z` at its position *)
+        transplant t z (Some y);
+        y.left := !(z.left);
+        (get_exn @@ left y).parent := Some y
+                                           
+
+    (**********************************)
+    (* 9. Rotations and balanced tree *)
+    (**********************************)
+
+    let left_rotate t x =
+      match right x with
+      | None -> ()
+      | Some y ->
+         
+         (* turn y's left subtree into x's right subtree *)
+         x.right := left y;
+         (if left y <> None
+          then (get_exn @@ left y).parent := Some x);
+         
+         (* link x's parent to y *)
+         y.parent := parent x;
+
+         (match parent x with 
+          | None -> t.root := Some y
+          | Some p -> match left p with
+                      | Some l when x == l ->
+                         p.left := Some y
+                      | _ ->
+                         p.right := Some y);
+         
+         (* Make x the left child of y *)
+         y.left := Some x;
+         x.parent := Some y      
+      
+end;;
+
+open BinarySearchTree;;
+
+let print_kv_tree = print_tree 
+                      (fun (k, v) -> Printf.sprintf "(%d, %s)" k v) 12;;
+
 (* open GraphicUtil *)
 
 #load "graphics.cma"
@@ -1372,11 +1861,10 @@ let intersect_as_collinear s1 s2 =
   else
     let (p1, p2) = s1 in
     let (p3, p4) = s2 in
-    (point_on_segment s1 p3 || point_on_segment s1 p4) &&
-    (point_on_segment s2 p1 || point_on_segment s2 p2)
-    ||
-    (point_on_segment s2 p1 || point_on_segment s2 p2) && 
-    (point_on_segment s1 p3 || point_on_segment s1 p4)
+    point_on_segment s1 p3 ||
+    point_on_segment s1 p4 ||
+    point_on_segment s2 p1 ||
+    point_on_segment s2 p2
 
 (* Checking if two segments intersect *)
 let segments_intersect s1 s2 = 
@@ -1389,8 +1877,18 @@ let segments_intersect s1 s2 =
     let d2 = direction p3 p4 p2 in
     let d3 = direction p1 p2 p3 in
     let d4 = direction p1 p2 p4 in
-    (d1 < 0 && d2 > 0 || d1 > 0 && d2 < 0) &&
-    (d3 < 0 && d4 > 0 || d3 > 0 && d4 < 0)
+    if (d1 < 0 && d2 > 0 || d1 > 0 && d2 < 0) &&
+       (d3 < 0 && d4 > 0 || d3 > 0 && d4 < 0)
+    then true
+    else if d1 = 0 && point_on_segment s2 p1
+    then true
+    else if d2 = 0 && point_on_segment s2 p3
+    then true
+    else if d3 = 0 && point_on_segment s1 p3
+    then true
+    else if d4 = 0 && point_on_segment s1 p4
+    then true
+    else false
 
 (******************************************)
 (*      Finding intersection points       *)
@@ -1438,7 +1936,7 @@ let rec all_pairs ls = match ls with
 let rec all_triples ls = 
   let (a, b) = (List.hd ls, List.hd @@ List.tl ls) in
   let rec walk l = match l with
-    | x :: y :: [] -> [(x, y, a); (x, a, b)]
+    | x :: y :: [] -> [(x, y, a); (y, a, b)]
     | x :: y :: z :: t -> (x, y, z) :: (walk (y :: z :: t))    
     | _ -> []
   in
@@ -1451,6 +1949,7 @@ let uniq lst =
   List.filter (fun x -> let tmp = not (Hashtbl.mem seen x) in
                         Hashtbl.replace seen x ();
                         tmp) lst
+
 
 (******************************************)
 (*             Polygons                   *)
@@ -1701,30 +2200,47 @@ let neighbours_on_different_sides ray pol p =
 
 (* Point within a polygon *)
 
-let point_within_polygon pol p = 
-  let ray = (p, 0.) in
-  let es = edges pol in
-  if List.mem p pol ||
-     List.exists (fun e -> point_on_segment e p) es then true
-  else
-    begin
-      let n = 
-        edges pol |> 
-        List.map (fun e -> ray_segment_intersection ray e) |>
-        List.filter (fun r -> r <> None) |>
-        List.map (fun r -> get_exn r) |>
+let choose_ray_angle pol = 
+  let edge_angles = 
+    edges pol |>
+    List.map (fun (Point (x1, y1), Point (x2, y2)) -> 
+        let dx = x2 -. x1 in
+        let dy = y1 -. y1 in 
+        atan2 dy dx) in
+  let n = List.length pol in
+  let candidate_angles = 
+    iota (n + 1) |>
+    List.map (fun i -> 
+      (float_of_int i) *. pi /. (float_of_int n)) in
+  let phi = List.find (fun c ->  List.for_all 
+                          (fun a -> not (a =~= c)) 
+                          edge_angles) candidate_angles in
+  phi
 
-        (* Touching edges *)
-        uniq |>
-
-        (* Touching vertices *)
-        List.filter (neighbours_on_different_sides ray pol) |>
-
-        (* Compute length *)
-        List.length
-      in
-      n mod 2 = 1
-    end
+  let point_within_polygon pol p = 
+    let ray = (p, (choose_ray_angle pol)) in
+    let es = edges pol in
+    if List.mem p pol ||
+       List.exists (fun e -> point_on_segment e p) es then true
+    else
+      begin
+        let n = 
+          edges pol |> 
+          List.map (fun e -> ray_segment_intersection ray e) |>
+          List.filter (fun r -> r <> None) |>
+          List.map (fun r -> get_exn r) |>
+  
+          (* Touching edges *)
+          uniq |>
+  
+          (* Touching vertices *)
+          List.filter (neighbours_on_different_sides ray pol) |>
+  
+          (* Compute length *)
+          List.length
+        in
+        n mod 2 = 1
+      end
 
 (* open ConvexHulls *)
 (*************************************)
