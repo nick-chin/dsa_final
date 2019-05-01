@@ -45,12 +45,34 @@ let get_all_squares room =
   done;
   !res;;
 
+(* get the Euclidean distance between two points *)
+let distance a b =
+  vec_length ((--) a b);;
+
 (* get the neighbours of a square p inside the room that can be reached by light *)
 let get_lightable_neighbours room p =
   let Point (x, y) = p in
   let candidates = [Point (x +. 1., y); Point (x +. 1., y +. 1.); Point (x, y +. 1.); Point (x -. 1., y +. 1.); Point (x -. 1., y); Point (x -. 1., y -. 1.); Point (x, y -. 1.); Point (x +. 1., y -. 1.)] in
   let neighbours = List.filter (fun e -> square_inside_room room e) candidates in
-  neighbours;;
+  (* check if a neighbour is lightable from p (light cannot go around corners) *)
+  let lightable p neighbour =
+    if neighbour = Point (x +. 1., y +. 1.)
+    then
+      (List.mem (Point (x +. 1., y)) neighbours) && (List.mem (Point (x, y +. 1.)) neighbours)
+    else if neighbour = Point (x +. 1., y -. 1.)
+    then
+      (List.mem (Point (x +. 1., y)) neighbours) && (List.mem (Point (x, y -. 1.)) neighbours)
+    else if neighbour = Point (x -. 1., y -. 1.)
+    then
+      (List.mem (Point (x -. 1., y)) neighbours) && (List.mem (Point (x, y -. 1.)) neighbours)
+    else if neighbour = Point (x -. 1., y +. 1.)
+    then
+      (List.mem (Point (x -. 1., y)) neighbours) && (List.mem (Point (x, y +. 1.)) neighbours)
+    else
+      true
+  in
+  let lightable_neighbours = List.filter (fun e -> lightable p e) neighbours in
+  lightable_neighbours;;
 
 (* get the possible moves from a square p inside the room *)
 let get_next_moves room p =
@@ -428,9 +450,10 @@ let play_game room =
       end
     else
       let score = List.length !path in
-      let Point (cx, cy) = get_center room in
+      (* let Point (cx, cy) = get_center room in
       let (x, y) = (int_of_float (cx -. scaling_factor), (int_of_float cy)) in
       moveto x y;
+       *)
       set_text_size 12;
       set_color blue;
       draw_string ("GAME FINISHED. SCORE: "^(string_of_int score));
