@@ -15,6 +15,11 @@ let ex_grpah1 =
 	["11; "0 1"; "1 2"; "2 3"; "2 6"; "2 7"; "3 4"; 
 	"4 5"; "6 5"; "7 8"; "8 6"; "8 9"; "8 10"; "9 5"; "9 10"]
 	
+
+let example_graph = 
+	([|"0"; "1"; "2"; "3"; "4"; "5"|],
+	[(0, 1); (1, 2); (2, 3); (1, 4); (4, 5); (3,5); (2,5)])
+	
 	
 (* 	let example_graph1 = 
 	([|"a"; "b"; "u"; "v"|],
@@ -50,13 +55,13 @@ let ex_grpah1 =
 	 
 	 
 	
-(* let example_graphe = read_graph_and_payloads 11 (fst example_graph) (snd example_graph) ([] : (int * int * unit) list) 
+(* let example_graphe = read_graph_and_payloads 6 (fst example_graph) (snd example_graph) ([] : (int * int * unit) list) 
 
 let sentinel_of_example = sentinel_tree (0, example_graphe);;
 
 let viz_sentinel_of_example = visualize_sentinel_tree sentinel_of_example;;
 
-let read_sentinel_of_example = graphviz_with_payload viz_sentinel_of_example (fst example_graph) "sentinel.dot"
+let read_sentinel_of_example = graphviz_with_payload viz_sentinel_of_example (fst example_graph) "example1.dot"
 
  *)
 
