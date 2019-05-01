@@ -1,13 +1,13 @@
-(* open Week_01 *)
-(* open Week_02 *)
-(* open Week_03 *)
-(* open Week_06 *)
-(* open GraphicUtil *)
-(* open Points *)
-(* open Polygons *)
-(* open ConvexHulls *)
-#use "ex3_libraries.ml";;
-#use "ex3_rooms.ml";;
+open Week_01
+open Week_02
+open Week_03
+open Week_06
+open Week_08_HashTable
+open GraphicUtil
+open Graphics
+open Points
+open Polygons
+open Ex3_rooms
 
 module Astar :
 sig
