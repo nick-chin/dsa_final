@@ -202,23 +202,77 @@ List.rev !path;;
 (************************************************)
 (*               5. Visualization               *)
 (************************************************)
-(* shift a point with respect to the origin (400, 300) and scale it for visualization *)
-let calibrate p scaling_factor =
-  let (x0, y0) = origin in
-  let x = float_of_int (x0 + (int_of_float ((get_x p) *. scaling_factor))) in
-  let y = float_of_int (y0 + (int_of_float ((get_y p) *. scaling_factor))) in
+
+(* draw blank window without axes *)
+let draw_canvas _ = open_graph " 800x600";;
+
+(* get the scaling factor that best visualizes the room *)
+let get_scaling_factor room =
+  let all_x = List.map (fun e -> get_x e) room in
+  let all_y = List.map (fun e -> get_y e) room in
+  let (min_x, min_y) = (min_list all_x, min_list all_y) in
+  let (max_x, max_y) = (max_list all_x, max_list all_y) in
+  let scaling_factor = 580. /. (max (max_x -. min_x) (max_y -. min_y)) in
+  scaling_factor;;
+
+(* get the position of the origin (0, 0) that best visualizes the room *)
+let get_origin room =
+  let scaling_factor = get_scaling_factor room in
+  let all_x = List.map (fun e -> get_x e) room in
+  let all_y = List.map (fun e -> get_y e) room in
+  let (min_x, min_y) = (min_list all_x, min_list all_y) in
+  let (max_x, max_y) = (max_list all_x, max_list all_y) in
+  let center = (Point ((max_x +. min_x)/.2., (max_y +. min_y)/.2.)) in
+  let Point (dx, dy) = center in
+  (--) (Point (400., 300.)) (Point (dx *. scaling_factor, dy *. scaling_factor));;
+
+(* shift a point with respect to the origin and scale it for visualization *)
+let calibrate p scaling_factor origin =
+  let Point (x0, y0) = origin in
+  let x = x0 +. (get_x p) *. scaling_factor in
+  let y = y0 +. (get_y p) *. scaling_factor in
   Point (x, y);;
 
+(* get the center of the room *)
+let get_center room =
+  let origin = get_origin room in
+  let scaling_factor = get_scaling_factor room in
+  let all_x = List.map (fun e -> get_x e) room in
+  let all_y = List.map (fun e -> get_y e) room in
+  let (min_x, min_y) = (min_list all_x, min_list all_y) in
+  let (max_x, max_y) = (max_list all_x, max_list all_y) in
+  let center = (Point ((max_x +. min_x)/.2., (max_y +. min_y)/.2.)) in
+  calibrate center scaling_factor origin;;
+
 (* draw a room scaled by the scaling factor *)
-let draw_room room scaling_factor =
-  let room_scaled = resize_polygon scaling_factor room in
-  draw_polygon room_scaled;
+let draw_room room =
+  clear_graph ();
+  let origin = get_origin room in
+  let scaling_factor = get_scaling_factor room in
   set_color black;
-  fill_poly (Array.of_list (List.map (fun e -> let Point (x, y) = calibrate e scaling_factor in (int_of_float x, int_of_float y)) room));;
+  fill_poly (Array.of_list (List.map (fun e ->
+                                let Point (x, y) = calibrate e scaling_factor origin in
+                                (int_of_float x, int_of_float y)) room));;
+(*
+open TestRooms;;
+draw_canvas ();;
+draw_room room1;;
+draw_room room2;;
+draw_room room3;;
+draw_room room4;;
+draw_room room5;;
+draw_room room6;;
+draw_room room7;;
+draw_room room8;;
+draw_room room9;;
+draw_room room10;;
+clear_graph ();;
+ *)
+
 
 (* cast light in the 1 x 1 square whose left-bottom corner is p *)
-let cast_light p scaling_factor =
-  let Point (x, y) = calibrate p scaling_factor in
+let cast_light p scaling_factor origin =
+  let Point (x, y) = calibrate p scaling_factor origin in
   let sf = int_of_float scaling_factor in
   set_color yellow;
   fill_rect (int_of_float x) (int_of_float y) sf sf;
@@ -226,74 +280,52 @@ let cast_light p scaling_factor =
   draw_rect (int_of_float x) (int_of_float y) sf sf;;
 
 (* return the center of a square given by its lower left corner (scaled) *)
-let square_center p scaling_factor =
+let square_center p scaling_factor origin =
   let Point (x, y) = p in
   let center = Point (x +. 0.5, y +. 0.5) in
-  calibrate center scaling_factor;;
+  calibrate center scaling_factor origin;;
 
 (* check if a square given by its lower left corner is already lighted *)
-let lighted p scaling_factor =
-  let Point (x, y) = square_center p scaling_factor in
+let lighted p scaling_factor origin =
+  let Point (x, y) = square_center p scaling_factor origin in
   point_color (int_of_float x) (int_of_float y) <> black;;
 
 (* cast light around a watchman's position without letting the light go outside the room *)
-let cast_light_around room p scaling_factor =
+let cast_light_around room p scaling_factor origin =
   let neighbours = get_lightable_neighbours room p in
-  List.iter (fun e -> if (square_inside_room room e) && (not (lighted e scaling_factor))
-                      then cast_light e scaling_factor) (p :: neighbours);;
+  List.iter (fun e -> if (square_inside_room room e) && (not (lighted e scaling_factor origin))
+                      then cast_light e scaling_factor origin) (p :: neighbours);;
 
 (* draw a red line between points a and b (scaled) *)
-let draw_line a b scaling_factor =
+let draw_line a b scaling_factor origin =
   set_color red;
-  let a' = calibrate a scaling_factor in
-  let b' = calibrate b scaling_factor in
+  let a' = calibrate a scaling_factor origin in
+  let b' = calibrate b scaling_factor origin in
   moveto (int_of_float (get_x a')) (int_of_float (get_y a'));
   lineto (int_of_float (get_x b')) (int_of_float (get_y b'));;
 
 (* draw the watchman as a red dot in a square given by its lower left corner (scaled) *)
-let draw_watchman p scaling_factor =
+let draw_watchman p scaling_factor origin =
   set_color red;
-  let Point (x, y) = square_center p scaling_factor in
-  fill_circle (int_of_float x) (int_of_float y) (int_of_float (scaling_factor *. 0.1));;
+  let Point (x, y) = square_center p scaling_factor origin in
+  fill_circle (int_of_float x) (int_of_float y) (int_of_float (scaling_factor *. 0.3));;
 
 (* remove the watchman from a square given by its lower left corner (scaled) *)
-let remove_watchman p scaling_factor =
+let remove_watchman p scaling_factor origin =
   set_color yellow;
-  let Point (x, y) = square_center p scaling_factor in
-  fill_circle (int_of_float x) (int_of_float y) (int_of_float (scaling_factor *. 0.1));;
-
-let get_scaling_factor room =
-  let all_x = List.map (fun e -> get_x e) room in
-  let all_y = List.map (fun e -> get_y e) room in
-  let (min_x, min_y) = (min_list all_x, min_list all_y) in
-  let (max_x, max_y) = (max_list all_x, max_list all_y) in
-  let scaling_factor = 300. /. (max (max_x -. min_x) (max_y -. min_y)) in
-  scaling_factor;;
-
-(*
-mk_screen ();;
-draw_room room1 (get_scaling_factor room1);;
-draw_room room2 (get_scaling_factor room2);;
-draw_room room3 (get_scaling_factor room3);;
-draw_room room4 (get_scaling_factor room4);;
-draw_room room5 (get_scaling_factor room5);;
-draw_room room6 (get_scaling_factor room6);;
-draw_room room7 (get_scaling_factor room7);;
-draw_room room8 (get_scaling_factor room8);;
-draw_room room9 (get_scaling_factor room9);;
-draw_room room10 (get_scaling_factor room10);;
-clear_screen ();;
- *)
+  let Point (x, y) = square_center p scaling_factor origin in
+  fill_circle (int_of_float x) (int_of_float y) (int_of_float (scaling_factor *. 0.3));;
 
 (* visualize a watchman's route as he walks (scaled) *)
 let visualize room =
-  clear_screen ();
+  clear_graph ();
+  let origin = get_origin room in
   let scaling_factor = get_scaling_factor room in
-  draw_room room scaling_factor;
+  draw_room room;
   Thread.delay 1.;
   let p = ref (Point (0., 0.)) in
-  cast_light_around room !p scaling_factor;
-  draw_watchman !p scaling_factor;
+  cast_light_around room !p scaling_factor origin;
+  draw_watchman !p scaling_factor origin;
   let path = ref [!p] in
   let neighbours = ref (get_lightable_neighbours room !p) in
   let all_squares = get_all_squares room in
@@ -309,10 +341,10 @@ let visualize room =
     then
       begin
         let p1 = get_exn next_move in
-        remove_watchman !p scaling_factor;
-        draw_line ((++) !p (0.5, 0.5)) ((++) p1 (0.5, 0.5)) scaling_factor;
-        cast_light_around room p1 scaling_factor;
-        draw_watchman p1 scaling_factor;
+        remove_watchman !p scaling_factor origin;
+        draw_line ((++) !p (0.5, 0.5)) ((++) p1 (0.5, 0.5)) scaling_factor origin;
+        cast_light_around room p1 scaling_factor origin;
+        draw_watchman p1 scaling_factor origin;
         p := p1;
         neighbours := get_lightable_neighbours room !p;
         path := !p :: !path;
@@ -332,11 +364,80 @@ Raised by primitive operation at unknown location
 Called from file "thread.ml", line 74, characters 23-50
 Called from file "//toplevel//", line 265, characters 2-17
 Called from file "toplevel/toploop.ml", line 180, characters 17-56
-*)
-mk_screen ();;
+ *)
+(*
+draw_canvas ();;
 visualize room1;;
+clear_graph();;
+ *)
 
 
 (************************************************)
 (*                6. Video game                 *)
 (************************************************)
+let play_game room =
+  draw_canvas ();
+  let origin = get_origin room in
+  let scaling_factor = get_scaling_factor room in
+  draw_room room;
+  let p = ref (Point (0., 0.)) in
+  let path = ref [!p] in
+  let neighbours = ref (get_lightable_neighbours room !p) in
+  let all_squares = get_all_squares room in
+  let num_of_squares = List.length all_squares in
+  let open SquareTable in
+  let lighted_squares = mk_new_table 5 in
+  List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours));
+  cast_light_around room !p scaling_factor origin;
+  draw_watchman !p scaling_factor origin;
+  let rec play _ =
+    if (!(lighted_squares.size) < num_of_squares)
+    then
+      begin
+        let event = wait_next_event [Key_pressed] in
+        draw_watchman !p scaling_factor origin;
+        cast_light_around room !p scaling_factor origin;
+        let p1 = ref !p in
+        if event.key == 'w'
+        then p1 := (++) !p (0., 1.)
+        else if event.key == 's'
+        then p1 := (++) !p (0., -1.)
+        else if event.key == 'a'
+        then p1 := (++) !p (-1., 0.)
+        else if event.key == 'd'
+        then p1 := (++) !p (1., 0.)
+        else if event.key == 'q'
+        then exit 0
+        else
+          play();
+        if square_inside_room room !p1
+        then
+          begin
+            remove_watchman !p scaling_factor origin;
+            draw_line ((++) !p (0.5, 0.5)) ((++) !p1 (0.5, 0.5)) scaling_factor origin;
+            cast_light_around room !p1 scaling_factor origin;
+            draw_watchman !p1 scaling_factor origin;
+            p := !p1;
+            neighbours := get_lightable_neighbours room !p;
+            path := !p :: !path;
+            List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours));
+            play ()
+          end
+        else
+          play ()
+      end
+    else
+      let score = List.length !path in
+      let Point (cx, cy) = get_center room in
+      let (x, y) = (int_of_float (cx -. scaling_factor), (int_of_float cy)) in
+      moveto x y;
+      set_text_size 12;
+      set_color blue;
+      draw_string ("GAME FINISHED. SCORE: "^(string_of_int score));
+  in
+  play ();
+  !path;;
+
+open TestRooms;;
+play_game room1;;
+play_game room2;;
