@@ -239,43 +239,12 @@ let choose_next_move room p preferences lighted_squares =
      else None
   | _ -> None;;
 
+module PointTable = ResizableListBasedHashTable(struct type t = Point end);;
+
 (* greedy & fixed order *)
 let get_watchman_path room =
   let open Astar in
-  let solve field init final =
-  match (init, final) with
-  | start, goal ->
-    let cost p q =
-      let Point (i,j) = p in
-      let Point (k,l) = q in 
-      Float.to_int(Float.abs (i-.k) +. Float.abs (j-.l)) in
-    let problem = {cost; goal; get_next_states = get_next_moves field} in
-    search problem start
-  in
-  let closest_square lst current =
-  let dst = ref None in
-  let res = ref None in
-  let rec find_closest_square ls = 
-    match ls with
-    | [] -> ()
-    | h :: t -> if get lighted_squares h <> None then find_closest_square t else 
-    let Point (i,j) = h in
-    let Point (k,l) = current in
-    let dst' = Float.to_int(Float.abs (i-.k) +. Float.abs (j-.l))
-    if !dst = None then 
-    begin
-      dst := Some dst';
-      res := Some h
-    end
-    else if dst' < get_exn (!dst) then
-    begin
-      dst := Some dst';
-      res := Some h
-    end
-    in 
-    find_closest_square lst;
-    !res
-  in
+  let open PointTable in
   let p = ref (Point (0., 0.)) in
   let path = ref [!p] in
   let neighbours = ref (get_lightable_neighbours room !p) in
@@ -285,6 +254,50 @@ let get_watchman_path room =
   let lighted_squares = mk_new_table 5 in
   List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours));
   let preferences = [|"up"; "right"; "down"; "left"|] in
+  let solve field init final =
+    match (init, final) with
+    | start, goal ->
+      let cost p q =
+        let Point (i,j) = p in
+        let Point (k,l) = q in 
+        Float.to_int(Float.abs (i-.k) +. Float.abs (j-.l)) in
+      let problem = {cost; goal; get_next_states = get_next_moves field} in
+      let lst = search problem start in
+      let rec walk ls acc =
+        match ls with
+        | [] -> acc
+        | h :: t ->
+          if light_new_squares room lighted_squares h
+          then h :: acc
+          else walk t (h :: acc)
+      in List.rev (walk (List.rev lst) [])
+  in
+  let closest_square lst current =
+  let dst = ref None in
+  let res = ref None in
+  let rec find_closest_square ls = 
+    match ls with
+    | [] -> ()
+    | h :: t -> if get lighted_squares h <> None then find_closest_square t else 
+      let Point (i,j) = h in
+      let Point (k,l) = current in
+      let dst' = Float.to_int(Float.abs (i-.k) +. Float.abs (j-.l)) in
+      if !dst = None then 
+      begin
+        dst := Some dst';
+        res := Some h
+      end
+      else if dst' < get_exn (!dst) then
+      begin
+        dst := Some dst';
+        res := Some h
+      end
+      else ();
+      find_closest_square t
+    in 
+    find_closest_square lst;
+    !res
+  in
   while (!(lighted_squares.size) < num_of_squares) do (* when the room is not fully lit *)
     let next_move = choose_next_move room !p preferences lighted_squares in
     if next_move = None
@@ -293,12 +306,12 @@ let get_watchman_path room =
       let c = closest_square all_squares !p in
       if c <> None 
       then begin
-        let closest_path = solve room (get_exn c) !p in
+        let closest_path = solve room !p (get_exn c) in
         List.iter (fun x -> 
-          p := get_exn x;
+          p := x;
           neighbours := get_lightable_neighbours room !p;
           path := !p :: !path;
-          List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours))) closest_path
+          List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours))) closest_path;
       end
       else ()
     end
@@ -469,11 +482,13 @@ let remove_watchman p scaling_factor origin =
 
 (* visualize a watchman's route as he walks (scaled) *)
 let visualize room =
+  let open Astar in
+  let open PointTable in
   clear_graph ();
   let origin = get_origin room in
   let scaling_factor = get_scaling_factor room in
   draw_room room;
-  Thread.delay 1.;
+  Thread.delay 0.3;
   let p = ref (Point (0., 0.)) in
   cast_light_around room !p scaling_factor origin;
   draw_watchman !p scaling_factor origin;
@@ -485,11 +500,74 @@ let visualize room =
   let lighted_squares = mk_new_table 5 in
   List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours));
   let preferences = [|"up"; "right"; "down"; "left"|] in
-  while (!(lighted_squares.size) < num_of_squares) do
-    Thread.delay 1.;
+  let solve field init final =
+  match (init, final) with
+  | start, goal ->
+    let cost p q =
+      let Point (i,j) = p in
+      let Point (k,l) = q in 
+      Float.to_int(Float.abs (i-.k) +. Float.abs (j-.l)) in
+    let problem = {cost; goal; get_next_states = get_next_moves field} in
+    let lst = search problem start in
+    let rec walk ls acc =
+      match ls with
+      | [] -> acc
+      | h :: t ->
+        if light_new_squares room lighted_squares h
+        then h :: acc
+        else walk t (h :: acc)
+    in List.rev (walk (List.rev lst) [])
+  in
+  let closest_square lst current =
+  let dst = ref None in
+  let res = ref None in
+  let rec find_closest_square ls = 
+    match ls with
+    | [] -> ()
+    | h :: t -> if get lighted_squares h <> None then find_closest_square t else 
+      let Point (i,j) = h in
+      let Point (k,l) = current in
+      let dst' = Float.to_int(Float.abs (i-.k) +. Float.abs (j-.l)) in
+      if !dst = None then 
+      begin
+        dst := Some dst';
+        res := Some h
+      end
+      else if dst' < get_exn (!dst) then
+      begin
+        dst := Some dst';
+        res := Some h
+      end
+      else ();
+      find_closest_square t
+    in 
+    find_closest_square lst;
+    !res
+  in
+  while (!(lighted_squares.size) < num_of_squares) do (* when the room is not fully lit *)
+    Thread.delay 0.3;
     let next_move = choose_next_move room !p preferences lighted_squares in
-    if next_move <> None
+    if next_move = None
     then
+    begin
+      let c = closest_square all_squares !p in
+      if c <> None 
+      then begin
+        let closest_path = solve room !p (get_exn c) in
+        List.iter (fun x ->
+          Thread.delay 0.3;
+          remove_watchman !p scaling_factor origin;
+          draw_line ((++) !p (0.5, 0.5)) ((++) x (0.5, 0.5)) scaling_factor origin;
+          cast_light_around room x scaling_factor origin;
+          draw_watchman x scaling_factor origin; 
+          p := x;
+          neighbours := get_lightable_neighbours room !p;
+          path := !p :: !path;
+          List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours))) closest_path;
+      end
+      else ()
+    end
+    else
       begin
         let p1 = get_exn next_move in
         remove_watchman !p scaling_factor origin;
@@ -501,14 +579,9 @@ let visualize room =
         path := !p :: !path;
         List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours));
       end
-    else
-      (* TBD *)
-      (* if we are trapped, restart procedure at an unlighted square *)
-      ();
   done;
   List.rev !path;;
 
-open TestRooms;;
 (* cannot put mk_screen () inside the function, other wise will raise error:
 Exception: (Unix.Unix_error "Interrupted system call" select "").
 Raised by primitive operation at unknown location
