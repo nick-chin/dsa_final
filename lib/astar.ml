@@ -1,39 +1,3 @@
-(* open Week_01 *)
-(* open Week_02 *)
-(* open Week_03 *)
-(* open Week_06 *)
-(* open GraphicUtil *)
-(* open Points *)
-(* open Polygons *)
-(* open ConvexHulls *)
-
-let point_within_polygon1 pol p = 
-  (* let ray = (p, 0.) in *)
-  let ray = (p, Random.float pi) in
-  let es = edges pol in
-  if List.mem p pol ||
-     List.exists (fun e -> point_on_segment e p) es then true
-  else
-    begin
-      let n = 
-        edges pol |> 
-        List.map (fun e -> ray_segment_intersection ray e) |>
-        List.filter (fun r -> r <> None) |>
-        List.map (fun r -> get_exn r) |>
-
-        (* Touching edges *)
-        uniq |>
-
-        (* Touching vertices *)
-        List.filter (neighbours_on_different_sides ray pol) |>
-
-        (* Compute length *)
-        List.length
-      in
-      n mod 2 = 1
-    end;;
-    
-    
 module Astar :
 sig
   type 'a t =
@@ -61,7 +25,7 @@ end = struct
       tail : 'a list;
     }
 
-  let create_path from problem state =
+  let create_path ?from problem state =
     let (cost_from_start, tail) = match from with (* from is 'a path option *)
       | None -> (0, [])
       | Some p -> (p.cost_from_start + problem.cost p.head state, (* existing cost + potential cost from the head to a state *)
@@ -117,44 +81,45 @@ end = struct
     | None -> raise Not_found
     | Some p -> p.head :: p.tail
 end
-
-let findi f =
-  let rec aux i = fun x -> 
-    match x with
-    | [] -> None
-    | xi :: l -> match f i xi with None -> aux (i+.1.) l | Some _ as res -> res
-  in
-  aux 0.
-
-let findij f = findi (fun i -> findi (f i))
-
-let at x (i, j) = findij (fun k l e -> if Float.equal i k && Float.equal j l then Some e else None) x
-
-let get_next_states field (i, j) =
-  [(i-.1., j); (i+.1., j); (i, j-.1.); (i, j+.1.)]
-  |> List.filter (fun pos -> match at field pos with
-    | None -> false
-    | Some (i,j) -> square_inside_room_edited field (i,j))
+  
+let get_neighbours_edited room (x, y) =
+  let candidates = [(x +. 1., y); (x, y +. 1.); (x -. 1., y); (x, y -. 1.)] in
+  let neighbours = List.filter (fun e -> square_inside_room_edited room e) candidates in
+  neighbours;;
 
 let square_inside_room_edited room (x,y) =
-  let corners = [Point (x,y); Point (x +. 1., y); Point (x +. 1., y +. 1.); Point (x, y +. 1.)] in
-  let res = List.map (fun e -> point_within_polygon1 room e) corners in
-  List.for_all (fun e -> e) res;;
-      
-let draw_path field states =
-  let path = ref [] in
-  let mapij f = List.mapi (fun i -> List.mapi (f i)) in
-  List.fold_left (fun (i, j)->
-      mapij (fun i' j' xij -> if i=i' && j=j' && square_inside_room field xij then 
-      path := xij :: !path))
-    field states in
-  List.rev !path
+  let corner = Point (x +. 0.5, y +. 0.5) in
+  point_within_polygon1 room corner;;
 
 let solve field init final =
   let open Astar in
   match (init, final) with
   | Some start, Some goal ->
     let cost (i, j) (k, l) = Float.to_int(Float.abs (i-.k) +. Float.abs (j-.l)) in
-    let problem = { cost; goal; get_next_states = get_next_states field (fst cost) init;} in
+    let problem = {cost; goal; get_next_states = get_neighbours_edited field} in
     search problem start
-  | _ -> failwith "No available routes!"
+  | _ -> raise Not_found
+
+let closest_square lst current =
+  let dst = ref None in
+  let res = ref None in
+  let rec find_closest_square ls = 
+    match ls with
+    | [] -> ()
+    | h :: t -> if get lighted_squares h <> None then find_closest_square t else 
+    let Point (i,j) = h in
+    let Point (k,l) = current in
+    let dst' = Float.to_int(Float.abs (i-.k) +. Float.abs (j-.l))
+    if !dst = None then 
+    begin
+      dst := Some dst';
+      res := Some h
+    end
+    else if dst' < get_exn (!dst) then
+    begin
+      dst := Some dst';
+      res := Some h
+    end
+    in 
+    find_closest_square lst;
+    !res;;
