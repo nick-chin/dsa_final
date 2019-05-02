@@ -1,5 +1,5 @@
 (* open Week_01 *)
-let find_min ls = 
+(* let find_min ls = 
   let rec walk xs min = 
     match xs with
     | [] -> min
@@ -2394,4 +2394,4 @@ let convex_hull_with_tracing ?cur:(cur = false) points =
   List.iter draw_point points;
   draw_polygon ~color:Graphics.red res;
   
-  res
+  res *)
