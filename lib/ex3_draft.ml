@@ -663,6 +663,4 @@ let play_game room =
   play ();
   !path;;
 
-open TestRooms;;
-play_game room1;;
-play_game room2;;
+open TestRooms
