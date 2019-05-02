@@ -86,9 +86,11 @@ let eval_expr ls =
     check_front ls;
     check_back ls
   in
-
-  validate ls;
-  add_num @@ multi_num @@ conjoin_num ls;;
+  
+  if ls = [] then raise (Failure "Invalid expression list")
+  else 
+    (validate ls;
+    add_num @@ multi_num @@ conjoin_num ls);;
 
 
 (*******************************************)
