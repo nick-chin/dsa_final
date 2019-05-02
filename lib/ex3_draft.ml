@@ -98,15 +98,15 @@ end
 (************************************************)
 (* get the maximum element in a list *)
 let max_list l =
-  List.fold_left (fun acc x -> max acc x) (float_of_int min_int) l;;
+  List.fold_left (fun acc x -> max acc x) (float_of_int min_int) l
 
 (* get the minimum element in a list *)
 let min_list l =
-  List.fold_left (fun acc x -> min acc x) (float_of_int max_int) l;;
+  List.fold_left (fun acc x -> min acc x) (float_of_int max_int) l
 
 (* check if a 1 x 1 square given by p (its left-bottom corner) is inside the room *)
 let square_inside_room room p =
-  point_within_polygon room ((++) p (0.5, 0.5));;
+  point_within_polygon room ((++) p (0.5, 0.5))
 
 (* get all the squares inside the room, given by their lower left corners *)
 let get_all_squares room =
@@ -127,11 +127,11 @@ let get_all_squares room =
     done;
     x := !x +. 1.
   done;
-  !res;;
+  !res
 
 (* get the Euclidean distance between two points *)
 let distance a b =
-  vec_length ((--) a b);;
+  vec_length ((--) a b)
 
 (* get the neighbours of a square p inside the room that can be reached by light *)
 let get_lightable_neighbours room p =
@@ -156,21 +156,22 @@ let get_lightable_neighbours room p =
       true
   in
   let lightable_neighbours = List.filter (fun e -> lightable p e) neighbours in
-  lightable_neighbours;;
+  lightable_neighbours
 
 (* get the possible moves from a square p inside the room *)
 let get_next_moves room p =
   let Point (x, y) = p in
   let candidates = [Point (x +. 1., y); Point (x, y +. 1.); Point (x -. 1., y); Point (x, y -. 1.)] in
   let next_moves = List.filter (fun e -> square_inside_room room e) candidates in
-  next_moves;;
+  next_moves
 
 (* hash table to record lighted squares *)
 module SquareTable =
-  ResizableListBasedHashTable(struct type t = point * bool end);;
+  ResizableListBasedHashTable(struct type t = point * bool end)
+  
 (* hash table to record direction priorities *)
 module PrefTable =
-  ResizableListBasedHashTable(struct type t = point * int end);;
+  ResizableListBasedHashTable(struct type t = point * int end)
 
 (* count the number of new squares lighted by moving to point p *)
 let count_new_lighted_squares room lighted_squares p =
@@ -181,11 +182,11 @@ let count_new_lighted_squares room lighted_squares p =
     | _ -> true
   in let open SquareTable in
   let new_lighted = List.filter (fun e -> not (check_lighted (get lighted_squares e))) neighbours in
-  List.length new_lighted;;
+  List.length new_lighted
 
 (* check if moving to point p lights up new squares *)
 let light_new_squares room lighted_squares p =
-    count_new_lighted_squares room lighted_squares p <> 0;;
+    count_new_lighted_squares room lighted_squares p <> 0
 
 (* compare two moves by the number of potential newly lighted squares in reverse order *)
 let comp_move_new_lighted room lighted_squares p1 p2 =
@@ -193,7 +194,7 @@ let comp_move_new_lighted room lighted_squares p1 p2 =
   let new2 = count_new_lighted_squares room lighted_squares p2 in
   if new1 < new2 then 1
   else if new1 > new2 then (-1)
-  else 0;;
+  else 0
 
 (* build a hashtable out of a list of directions in the order of preference priority *)
 let get_pref_table preferences p =
@@ -210,7 +211,7 @@ let get_pref_table preferences p =
     else if direction = "left"
     then insert pref_table ((++) p (-1., 0.)) i
   done;
-  pref_table;;
+  pref_table
 
 (* choose the next move greedily, and if two moves potentially light the same number of new squares, choose according to a priority list of directions; if we cannot light new squares by moving in any of the four directions, we return None to indicate that we are trapped and the procedure needs to restart in another (possibly distant) unlighted square *)
 let choose_next_move room p preferences lighted_squares =
@@ -237,9 +238,9 @@ let choose_next_move room p preferences lighted_squares =
      if light_new_squares room lighted_squares h
      then Some h
      else None
-  | _ -> None;;
+  | _ -> None
 
-module PointTable = ResizableListBasedHashTable(struct type t = Point end);;
+module PointTable = ResizableListBasedHashTable(struct type t = Point end)
 
 (* greedy & fixed order *)
 let get_watchman_path room =
@@ -323,28 +324,28 @@ let get_watchman_path room =
         List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours));
       end
   done;
-  List.rev !path;;
+  List.rev !path
 
 (*
-open TestRooms;;
-let room = room1;;
-let p = ref (Point (0., 0.));;
-let path = ref [!p];;
-let neighbours = ref (get_lightable_neighbours room !p);;
-let all_squares = get_all_squares room;;
-let num_of_squares = List.length all_squares;;
-open SquareTable;;
-let lighted_squares = mk_new_table 5;;
-List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours));;
-let preferences = [|"up"; "right"; "down"; "left"|];;
-(!(lighted_squares.size) < num_of_squares);;
-let next_move = choose_next_move room !p preferences lighted_squares;;
-next_move <> None;;
-p := get_exn next_move;;
-neighbours := get_lightable_neighbours room !p;;
-path := !p :: !path;;
-List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours));;
-List.rev !path;;
+open TestRooms
+let room = room1
+let p = ref (Point (0., 0.))
+let path = ref [!p]
+let neighbours = ref (get_lightable_neighbours room !p)
+let all_squares = get_all_squares room
+let num_of_squares = List.length all_squares
+open SquareTable
+let lighted_squares = mk_new_table 5
+List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours))
+let preferences = [|"up"; "right"; "down"; "left"|]
+(!(lighted_squares.size) < num_of_squares)
+let next_move = choose_next_move room !p preferences lighted_squares
+next_move <> None
+p := get_exn next_move
+neighbours := get_lightable_neighbours room !p
+path := !p :: !path
+List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours))
+List.rev !path
  *)
   
 (************************************************)
@@ -368,7 +369,7 @@ List.rev !path;;
 (************************************************)
 
 (* draw blank window without axes *)
-let draw_canvas _ = open_graph " 800x600";;
+let draw_canvas _ = open_graph " 800x600"
 
 (* get the scaling factor that best visualizes the room *)
 let get_scaling_factor room =
@@ -377,7 +378,7 @@ let get_scaling_factor room =
   let (min_x, min_y) = (min_list all_x, min_list all_y) in
   let (max_x, max_y) = (max_list all_x, max_list all_y) in
   let scaling_factor = 580. /. (max (max_x -. min_x) (max_y -. min_y)) in
-  scaling_factor;;
+  scaling_factor
 
 (* get the position of the origin (0, 0) that best visualizes the room *)
 let get_origin room =
@@ -388,14 +389,14 @@ let get_origin room =
   let (max_x, max_y) = (max_list all_x, max_list all_y) in
   let center = (Point ((max_x +. min_x)/.2., (max_y +. min_y)/.2.)) in
   let Point (dx, dy) = center in
-  (--) (Point (400., 300.)) (Point (dx *. scaling_factor, dy *. scaling_factor));;
+  (--) (Point (400., 300.)) (Point (dx *. scaling_factor, dy *. scaling_factor))
 
 (* shift a point with respect to the origin and scale it for visualization *)
 let calibrate p scaling_factor origin =
   let Point (x0, y0) = origin in
   let x = x0 +. (get_x p) *. scaling_factor in
   let y = y0 +. (get_y p) *. scaling_factor in
-  Point (x, y);;
+  Point (x, y)
 
 (* get the center of the room *)
 let get_center room =
@@ -406,7 +407,7 @@ let get_center room =
   let (min_x, min_y) = (min_list all_x, min_list all_y) in
   let (max_x, max_y) = (max_list all_x, max_list all_y) in
   let center = (Point ((max_x +. min_x)/.2., (max_y +. min_y)/.2.)) in
-  calibrate center scaling_factor origin;;
+  calibrate center scaling_factor origin
 
 (* draw a room scaled by the scaling factor *)
 let draw_room room =
@@ -416,21 +417,21 @@ let draw_room room =
   set_color black;
   fill_poly (Array.of_list (List.map (fun e ->
                                 let Point (x, y) = calibrate e scaling_factor origin in
-                                (int_of_float x, int_of_float y)) room));;
+                                (int_of_float x, int_of_float y)) room))
 (*
-open TestRooms;;
-draw_canvas ();;
-draw_room room1;;
-draw_room room2;;
-draw_room room3;;
-draw_room room4;;
-draw_room room5;;
-draw_room room6;;
-draw_room room7;;
-draw_room room8;;
-draw_room room9;;
-draw_room room10;;
-clear_graph ();;
+open TestRooms
+draw_canvas ()
+draw_room room1
+draw_room room2
+draw_room room3
+draw_room room4
+draw_room room5
+draw_room room6
+draw_room room7
+draw_room room8
+draw_room room9
+draw_room room10
+clear_graph ()
  *)
 
 
@@ -441,24 +442,24 @@ let cast_light p scaling_factor origin =
   set_color yellow;
   fill_rect (int_of_float x) (int_of_float y) sf sf;
   set_color black;
-  draw_rect (int_of_float x) (int_of_float y) sf sf;;
+  draw_rect (int_of_float x) (int_of_float y) sf sf
 
 (* return the center of a square given by its lower left corner (scaled) *)
 let square_center p scaling_factor origin =
   let Point (x, y) = p in
   let center = Point (x +. 0.5, y +. 0.5) in
-  calibrate center scaling_factor origin;;
+  calibrate center scaling_factor origin
 
 (* check if a square given by its lower left corner is already lighted *)
 let lighted p scaling_factor origin =
   let Point (x, y) = square_center p scaling_factor origin in
-  point_color (int_of_float x) (int_of_float y) <> black;;
+  point_color (int_of_float x) (int_of_float y) <> black
 
 (* cast light around a watchman's position without letting the light go outside the room *)
 let cast_light_around room p scaling_factor origin =
   let neighbours = get_lightable_neighbours room p in
   List.iter (fun e -> if (square_inside_room room e) && (not (lighted e scaling_factor origin))
-                      then cast_light e scaling_factor origin) (p :: neighbours);;
+                      then cast_light e scaling_factor origin) (p :: neighbours)
 
 (* draw a red line between points a and b (scaled) *)
 let draw_line a b scaling_factor origin =
@@ -466,19 +467,19 @@ let draw_line a b scaling_factor origin =
   let a' = calibrate a scaling_factor origin in
   let b' = calibrate b scaling_factor origin in
   moveto (int_of_float (get_x a')) (int_of_float (get_y a'));
-  lineto (int_of_float (get_x b')) (int_of_float (get_y b'));;
+  lineto (int_of_float (get_x b')) (int_of_float (get_y b'))
 
 (* draw the watchman as a red dot in a square given by its lower left corner (scaled) *)
 let draw_watchman p scaling_factor origin =
   set_color red;
   let Point (x, y) = square_center p scaling_factor origin in
-  fill_circle (int_of_float x) (int_of_float y) (int_of_float (scaling_factor *. 0.3));;
+  fill_circle (int_of_float x) (int_of_float y) (int_of_float (scaling_factor *. 0.3))
 
 (* remove the watchman from a square given by its lower left corner (scaled) *)
 let remove_watchman p scaling_factor origin =
   set_color yellow;
   let Point (x, y) = square_center p scaling_factor origin in
-  fill_circle (int_of_float x) (int_of_float y) (int_of_float (scaling_factor *. 0.3));;
+  fill_circle (int_of_float x) (int_of_float y) (int_of_float (scaling_factor *. 0.3))
 
 (* visualize a watchman's route as he walks (scaled) *)
 let visualize room =
@@ -580,7 +581,7 @@ let visualize room =
         List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours));
       end
   done;
-  List.rev !path;;
+  List.rev !path
 
 (* cannot put mk_screen () inside the function, other wise will raise error:
 Exception: (Unix.Unix_error "Interrupted system call" select "").
@@ -590,9 +591,9 @@ Called from file "//toplevel//", line 265, characters 2-17
 Called from file "toplevel/toploop.ml", line 180, characters 17-56
  *)
 (*
-draw_canvas ();;
-visualize room1;;
-clear_graph();;
+draw_canvas ()
+visualize room1
+clear_graph()
  *)
 
 
