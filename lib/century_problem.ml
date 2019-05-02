@@ -107,8 +107,6 @@ let print_expr (ls : expr list) =
   List.map pp ls;
   print_newline ();;
 
-print_expr a;;
-print_expr b;;
 
 (*******************************************)
 (*       Part 3: Generating Candidates     *)
