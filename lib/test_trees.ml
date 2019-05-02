@@ -12,7 +12,7 @@ let example_graph =
 	(5, 9); (6, 3); (7, 10); (8, 3); (9, 1); (9, 2); (10, 2)])
 	
 let ex_grpah1 = 
-	["11; "0 1"; "1 2"; "2 3"; "2 6"; "2 7"; "3 4"; 
+	["11"; "0 1"; "1 2"; "2 3"; "2 6"; "2 7"; "3 4"; 
 	"4 5"; "6 5"; "7 8"; "8 6"; "8 9"; "8 10"; "9 5"; "9 10"]
 	
 
@@ -61,7 +61,7 @@ let sentinel_of_example = sentinel_tree (0, example_graphe);;
 
 let viz_sentinel_of_example = visualize_sentinel_tree sentinel_of_example;;
 
-let read_sentinel_of_example = graphviz_with_payload viz_sentinel_of_example (fst example_graph) "example1.dot"
+let read_sentinel_of_example = graphviz_with_payload viz_sentinel_of_example (fst example_graph) "example1.dot";;
 
  *)
 
