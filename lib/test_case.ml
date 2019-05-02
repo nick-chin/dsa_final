@@ -6,7 +6,6 @@ let%test "Century problem" =
   
 open Sentinels_in_graphs
 
-
 let%test "Sentinels-in-Graphs" =
-   final_test ();
+  final_test ();
   true
