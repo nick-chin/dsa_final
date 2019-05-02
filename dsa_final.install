@@ -1,0 +1,36 @@
+lib: [
+  "_build/install/default/lib/dsa_final/META" {"META"}
+  "_build/install/default/lib/dsa_final/century_problem.cmi" {"century_problem.cmi"}
+  "_build/install/default/lib/dsa_final/century_problem.cmt" {"century_problem.cmt"}
+  "_build/install/default/lib/dsa_final/century_problem.cmx" {"century_problem.cmx"}
+  "_build/install/default/lib/dsa_final/century_problem.ml" {"century_problem.ml"}
+  "_build/install/default/lib/dsa_final/dsa_final.a" {"dsa_final.a"}
+  "_build/install/default/lib/dsa_final/dsa_final.cma" {"dsa_final.cma"}
+  "_build/install/default/lib/dsa_final/dsa_final.cmxa" {"dsa_final.cmxa"}
+  "_build/install/default/lib/dsa_final/dsa_final.cmxs" {"dsa_final.cmxs"}
+  "_build/install/default/lib/dsa_final/dune-package" {"dune-package"}
+  "_build/install/default/lib/dsa_final/opam" {"opam"}
+  "_build/install/default/lib/dsa_final/sentinels_in_graphs.cmi" {"sentinels_in_graphs.cmi"}
+  "_build/install/default/lib/dsa_final/sentinels_in_graphs.cmt" {"sentinels_in_graphs.cmt"}
+  "_build/install/default/lib/dsa_final/sentinels_in_graphs.cmx" {"sentinels_in_graphs.cmx"}
+  "_build/install/default/lib/dsa_final/sentinels_in_graphs.ml" {"sentinels_in_graphs.ml"}
+  "_build/install/default/lib/dsa_final/test_case.cmi" {"test_case.cmi"}
+  "_build/install/default/lib/dsa_final/test_case.cmt" {"test_case.cmt"}
+  "_build/install/default/lib/dsa_final/test_case.cmx" {"test_case.cmx"}
+  "_build/install/default/lib/dsa_final/test_case.ml" {"test_case.ml"}
+  "_build/install/default/lib/dsa_final/test_trees.cmi" {"test_trees.cmi"}
+  "_build/install/default/lib/dsa_final/test_trees.cmt" {"test_trees.cmt"}
+  "_build/install/default/lib/dsa_final/test_trees.cmx" {"test_trees.cmx"}
+  "_build/install/default/lib/dsa_final/test_trees.ml" {"test_trees.ml"}
+  "_build/install/default/lib/dsa_final/watchman_problem.cmi" {"watchman_problem.cmi"}
+  "_build/install/default/lib/dsa_final/watchman_problem.cmt" {"watchman_problem.cmt"}
+  "_build/install/default/lib/dsa_final/watchman_problem.cmx" {"watchman_problem.cmx"}
+  "_build/install/default/lib/dsa_final/watchman_problem.ml" {"watchman_problem.ml"}
+  "_build/install/default/lib/dsa_final/watchman_rooms.cmi" {"watchman_rooms.cmi"}
+  "_build/install/default/lib/dsa_final/watchman_rooms.cmt" {"watchman_rooms.cmt"}
+  "_build/install/default/lib/dsa_final/watchman_rooms.cmx" {"watchman_rooms.cmx"}
+  "_build/install/default/lib/dsa_final/watchman_rooms.ml" {"watchman_rooms.ml"}
+]
+doc: [
+  "_build/install/default/doc/dsa_final/LICENSE"
+]
