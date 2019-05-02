@@ -325,32 +325,162 @@ let get_watchman_path room =
       end
   done;
   List.rev !path
-
-(*
-open TestRooms
-let room = room1
-let p = ref (Point (0., 0.))
-let path = ref [!p]
-let neighbours = ref (get_lightable_neighbours room !p)
-let all_squares = get_all_squares room
-let num_of_squares = List.length all_squares
-open SquareTable
-let lighted_squares = mk_new_table 5
-List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours))
-let preferences = [|"up"; "right"; "down"; "left"|]
-(!(lighted_squares.size) < num_of_squares)
-let next_move = choose_next_move room !p preferences lighted_squares
-next_move <> None
-p := get_exn next_move
-neighbours := get_lightable_neighbours room !p
-path := !p :: !path
-List.iter (fun e -> insert lighted_squares e true) (uniq (!p :: !neighbours))
-List.rev !path
- *)
   
 (************************************************)
 (*                   2. Tests                   *)
 (************************************************)
+
+(* path starts at (0, 0) *)
+let test_start_at_origin path =
+  List.hd path = Point (0., 0.);;
+
+(* path is connected *)
+let test_connectivity room path =
+  let rec walk path' acc =
+    match path' with
+    | h1 :: h2 :: t ->
+       walk (h2 :: t) ((List.mem h2 (get_neighbours room h1)) && acc)
+    | _ -> acc
+  in
+  walk path true;;
+
+(* path does not go through the walls or go outside the room *)
+let test_no_collisions room path =
+  (* it suffices to check that all squares that the watchman stepped on in the path are inside the room *)
+  List.for_all (fun e -> square_inside_room room e) path;;
+
+(* the whole room is lighted in the end *)
+let test_full_room_coverage room path =
+  let open SquareTable in
+  let rec walk path' lighted_squares =
+    match path' with
+    | h :: t ->
+       begin
+         let neighbours = get_lightable_neighbours room h in
+         List.iter (fun e -> insert lighted_squares e true) (uniq (h :: neighbours));
+         walk t lighted_squares
+       end
+    | [] -> lighted_squares
+  in
+  let lighted = walk path (mk_new_table 5) in
+  let num_of_squares = List.length (get_all_squares room) in
+  !(lighted.size) = num_of_squares;;
+
+(* test if the path is valid *)
+let test_valid_path room path =
+  assert (test_start_at_origin path);
+  assert (test_connectivity room path);
+  assert (test_no_collisions room path);
+  assert (test_full_room_coverage room path);
+  true;;
+
+(* get the edges of a polygon *)
+let get_edges polygon =
+  let rec walk poly edges =
+    match poly with
+    | h1 :: h2 :: t ->
+       walk (h2 :: t) ((h1, h2) :: edges)
+    | _ -> edges
+  in
+  walk polygon [];;
+
+(* randomly choose the next point in the polygon *)
+let generate_next_point p edgeLength =
+  let p1 = ref p in
+  let seed = Random.int 3 in
+  if seed = 0
+  then
+    (* go right *)
+    p1 := (++) p (edgeLength, 0.)
+  else if seed = 1
+  then
+    (* go up *)
+    p1 := (++) p (0., edgeLength)
+  else if seed = 2
+  then
+    (* go down *)
+    p1 := (++) p (0., -.edgeLength)
+  else
+    (* go left *)
+    p1 := (++) p (-.edgeLength, 0.);
+  !p1;;
+
+(* generate a random polygon containing the square (0, 0) in the first quadrant *)
+let generate_random_polygon n turnsLimit =
+  let p = ref (Point (0., 0.)) in
+  let p1 = ref !p in
+  let polygon = ref [!p] in
+  let turns = ((Random.int (turnsLimit/2)) + 2) * 2 in
+  let edgeLimit = n in
+  for i = 0 to turns do
+    let edgeLength = float_of_int ((Random.int edgeLimit) + 1) in
+    if i <> 0
+    then
+      begin
+        (* as long as p1 is outside the first quadrant, or the new edge (p, p1) intersects with the polygon, or (p, p1) is collinear with the previous edge, pick again *)
+        while (not (List.for_all (fun e -> find_intersection (!p, !p1) e = None)
+                      (List.tl (get_edges (List.rev !polygon))))) ||
+                (collinear (!p, !p1) (List.hd (List.tl !polygon), !p)) ||
+                  (((<=~) (get_x !p1) 0.) || ((<=~) (get_y !p1) 0.)) do
+          let edgeLength = float_of_int ((Random.int edgeLimit) + 1) in
+          p1 := generate_next_point !p edgeLength;
+        done;
+      end
+    else
+      (* go right at the first step *)
+      p1 := Point (edgeLength, 0.);
+    polygon := !p1 :: !polygon;
+    p := !p1
+  done;
+  (* go back to origin *)
+  let ending_point = List.hd !polygon in
+  (* if going all the way left from the ending point does not intersect the polygon *)
+  if List.for_all (fun e -> not (segments_intersect (ending_point, Point (0., get_y ending_point)) e)) (get_edges !polygon)
+  then polygon := (Point (0., get_y ending_point)) :: !polygon
+  else
+    begin
+      let high_point = Point (get_x ending_point, (max_list (List.map (fun e -> get_y e) !polygon)) +. 5.) in
+      if collinear (high_point, ending_point) (ending_point, List.hd (List.tl !polygon))
+      then polygon := List.tl !polygon
+      else ();
+      polygon := (Point (0., get_y high_point)) :: high_point :: !polygon;
+    end;
+  List.rev (!polygon);;
+
+(* flip a polygon vertically *)
+let flip poly =
+  List.map (fun e -> if (=~=) (get_y e) 0. then Point (get_x e, 0.) else Point (get_x e, -.(get_y e))) poly;;
+
+(* generate a random room *)
+let generate_random_room _ =
+  let poly1 = generate_random_polygon 10 20 in
+  let poly2 = generate_random_polygon 10 30 in
+  let flipped_poly2 = flip poly2 in
+  let len1 = List.length poly1 in
+  let len2 = List.length poly2 in
+  let p = gen_random_point_on_segment (List.nth poly1 (len1 - 2), List.nth poly1 (len1 - 1)) in
+  let shifted_poly2 = List.map (fun e -> (++) e (float_of_int (int_of_float (get_x p)), float_of_int (int_of_float (get_y p +. get_y (List.nth poly2 (len2 - 1)))))) flipped_poly2 in
+  let rec walk l1 l2 acc =
+    match l1 with
+    | [] -> acc
+    | [h] ->
+       (match l2 with
+       | [] -> h :: acc
+       | h' :: t' -> walk [h] t' (h' :: acc))
+    | h :: t -> walk t l2 (h :: acc)
+  in
+  let final_poly = List.tl @@ List.rev shifted_poly2 in
+  List.rev (walk poly1 (final_poly @ [List.nth shifted_poly2 (len2 - 1)]) []);;
+        
+(* random test *)
+
+let random_test _ =
+  for _ = 1 to 5 do
+    let room = generate_random_room () in
+    let path = get_watchman_path room in
+    assert (test_valid_path room path)
+  done;
+  true;;
 
 
 (************************************************)
