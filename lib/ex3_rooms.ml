@@ -1,3 +1,5 @@
+open Polygons
+
 module TestRooms = struct
 
   let room1 = polygon_of_int_pairs [(0, 0); (6, 0); (6, 1); (8, 1); (8, 2); (6, 2); (6, 3); (0, 3)]
