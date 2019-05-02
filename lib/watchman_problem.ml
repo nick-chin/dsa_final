@@ -251,7 +251,7 @@ module PointTable = ResizableListBasedHashTable(struct type t = Point end)
 (* greedy & fixed order *)
 let get_watchman_path room =
   if not (point_within_polygon room (Point (0.5, 0.5)))
-  then raise (Failure "Does not contain square (0, 0)")
+  then raise (Failure "Does not contain square (0, 0)");
   let open Astar in
   let open PointTable in
   let p = ref (Point (0., 0.)) in
