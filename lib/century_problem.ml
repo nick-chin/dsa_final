@@ -5,20 +5,7 @@
 type expr =
   | Add
   | Multi
-  | Num of int;;
-
-
-(* The 2 example solutions *)
-
-let a = [Num (1); Num (2); Add; Num(3); Num (4); Add;
-         Num (5); Multi; Num (6); Add; Num (7); Add;
-         Num (8); Add; Num (9)];;
-
-let b = [Num (1); Add; Num (2); Multi; Num (3); Add;
-         Num (4); Add; Num (5); Add; Num (6); Num (7);
-         Add; Num (8); Add; Num (9)];;
-
-
+  | Num of int
 
 let eval_expr ls =  
   (* Dealing with multiple digits *)
@@ -88,7 +75,7 @@ let eval_expr ls =
     check_back ls
   in
   validate ls;
-  add_num @@ multi_num @@ conjoin_num ls;;
+  add_num @@ multi_num @@ conjoin_num ls
 
 
 (*******************************************)
@@ -99,11 +86,11 @@ let pp (e : expr) =
   match e with
   | Num x -> Printf.printf "%d" x;
   | Add -> Printf.printf " + ";
-  | Multi -> Printf.printf " * ";;
+  | Multi -> Printf.printf " * "
 
 let print_expr (ls : expr list) =
   List.iter pp ls;
-  print_newline ();;
+  print_newline ()
 
 
 (*******************************************)
@@ -125,7 +112,7 @@ let gen_candidates i_list =
     | x ->
        apply_num_and_expr (List.fold_left (fun i h -> (apply_expr h (List.hd list)) @ i) [] x) (List.tl list)
   in
-  apply_num_and_expr [] (List.rev i_list);;
+  apply_num_and_expr [] (List.rev i_list)
 
 
 (* Finding correct candidates with given digits list and set target *)
@@ -145,4 +132,4 @@ let test_century_candidates _ =
        assert (eval_expr h = 100);
        confirm t
   in
-  confirm ls;;
+  confirm ls
