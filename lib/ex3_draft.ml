@@ -143,7 +143,7 @@ let get_neighbours room p =
 (* get the neighbours of a square p inside the room that can be reached by light *)
 let get_lightable_neighbours room p =
   let Point (x, y) = p in
-  let neighbours = let neighbours = get_neighbours room p in
+  let neighbours = get_neighbours room p in
   (* check if a neighbour is lightable from p (light cannot go around corners) *)
   let lightable p neighbour =
     if neighbour = Point (x +. 1., y +. 1.)
