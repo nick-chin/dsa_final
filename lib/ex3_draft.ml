@@ -661,6 +661,4 @@ let play_game room =
       draw_string ("GAME FINISHED. SCORE: "^(string_of_int score));
   in
   play ();
-  !path;;
-
-open TestRooms
+  !path
