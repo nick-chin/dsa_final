@@ -392,7 +392,7 @@ let get_edges polygon =
   in
   walk polygon []
 
-(* randomly choose the next point in the polygon *)
+(* randomly choose the next point in the polygon (does not go left) *)
 let generate_next_point p edgeLength =
   let p1 = ref p in
   let seed = Random.int 3 in
@@ -404,13 +404,9 @@ let generate_next_point p edgeLength =
   then
     (* go up *)
     p1 := (++) p (0., edgeLength)
-  else if seed = 2
-  then
-    (* go down *)
-    p1 := (++) p (0., -.edgeLength)
   else
-    (* go left *)
-    p1 := (++) p (-.edgeLength, 0.);
+    (* go down *)
+    p1 := (++) p (0., -.edgeLength);
   !p1
   
 (* generate a random polygon containing the square (0, 0) in the first quadrant *)
