@@ -1,5 +1,5 @@
 (*******************************************)
-(*       Part 1: Defining a Data Type      *)
+(*     Part 1: Data Type and Evaluation    *)
 (*******************************************)
 
 type expr =
@@ -82,15 +82,13 @@ let eval_expr ls =
       | Add | Multi -> raise (Failure "Invalid expression list");
       | _ -> ()
     in
+    if ls = [] then raise (Failure "Invalid expression list");
     walk ls 0;
     check_front ls;
     check_back ls
   in
-  
-  if ls = [] then raise (Failure "Invalid expression list")
-  else 
-    (validate ls;
-    add_num @@ multi_num @@ conjoin_num ls);;
+  validate ls;
+  add_num @@ multi_num @@ conjoin_num ls;;
 
 
 (*******************************************)
@@ -104,7 +102,7 @@ let pp (e : expr) =
   | Multi -> Printf.printf " * ";;
 
 let print_expr (ls : expr list) =
-  List.map pp ls;
+  List.iter pp ls;
   print_newline ();;
 
 
@@ -132,10 +130,10 @@ let gen_candidates i_list =
 
 (* Finding correct candidates with given digits list and set target *)
 
-let candidates ls target = 
+let candidates ls target =
   let list = List.filter (fun x -> eval_expr x = target) (gen_candidates ls) in
   List.iter print_expr list;
-  list;;
+  list
 
 let test_century_candidates _ =
   let ls = candidates [1;2;3;4;5;6;7;8;9] 100 in
