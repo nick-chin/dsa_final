@@ -133,6 +133,7 @@ let gen_candidates i_list =
 let candidates ls target =
   let list = List.filter (fun x -> eval_expr x = target) (gen_candidates ls) in
   List.iter print_expr list;
+  if list = [] then Printf.printf "No expression hits the target\n";
   list
 
 let test_century_candidates _ =
