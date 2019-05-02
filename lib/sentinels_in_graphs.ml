@@ -36,7 +36,7 @@ module GraphSentinel = struct
      let helper g s =
     (* Note that s is the root *)
 
-    (* Make color of s gray *)
+    (* Make color of s Black *)
     insert color_map s Black;
     (* Make distance of s Finite 0 *)
     insert distance_map s (Finite 0);
@@ -136,7 +136,7 @@ let gen_nodes n = let arr = Array.make n "0" in
   for i = 0 to n - 1 do
     arr.(i) <- string_of_int(i);
   done;
-  (arr, root);;
+  (arr, root)
 
 let gen_edges n =
   let size = Random.int (n* n) in
@@ -150,16 +150,17 @@ let gen_edges n =
   in gen_edges_helper size max
 
 
-let addnodes (lst: string array) g = let len = Array.length lst in
-   for i = 0 to len -1  do
-   add_node g lst.(i);
-   done
+let addnodes (lst: string array) g =
+  let len = Array.length lst in
+  for i = 0 to len -1  do
+    add_node g lst.(i);
+  done
 
-
-let addedges (lst: (int * int) array) g = let len = Array.length lst in
-     for i = 0 to len -1  do
-     add_edge g (fst (lst.(i))) (snd (lst.(i)));
-     done
+let addedges (lst: (int * int) array) g =
+  let len = Array.length lst in
+  for i = 0 to len -1  do
+    add_edge g (fst (lst.(i))) (snd (lst.(i)));
+  done
 
 let ensure_reachability graph n root =
   let max = n - 1 in
@@ -173,7 +174,7 @@ let ensure_reachability graph n root =
                     add_edge graph (fst (an_edge)) (snd (an_edge));
                     add_edge graph (snd (an_edge)) x;
                   done;
-                end)) all_nodes;;
+                end)) all_nodes
 
 
 (*Main Function: Procedure to generate random rooted graph*)
@@ -187,7 +188,7 @@ let gen_random_rooted_graph n =
   addnodes nodes g;
   addedges edges g;
   ensure_reachability g n root;
-  (root, g);;
+  (root, g)
 
 
 
@@ -325,4 +326,7 @@ let test_for_example_graph () =
   get_exn @@ get (snd sentinel_of_example) 10 == 7
 
 
-let final_test () = (test_for_sentinel_property (gen_random_rooted_graph 6) 4) && (test_for_sentinel_property (0, (example_graphe)) 4) && test_for_example_graph ()
+let final_test () =
+  (test_for_sentinel_property (gen_random_rooted_graph 6) 4) &&
+    (test_for_sentinel_property (0, (example_graphe)) 4) &&
+      test_for_example_graph ()
