@@ -596,8 +596,8 @@ let cast_light_around room p scaling_factor origin =
                       then cast_light e scaling_factor origin) (p :: neighbours)
 
 (* draw a red line between points a and b (scaled) *)
-let draw_line a b scaling_factor origin =
-  set_color red;
+let draw_line a b scaling_factor origin color =
+  set_color color;
   let a' = calibrate a scaling_factor origin in
   let b' = calibrate b scaling_factor origin in
   moveto (int_of_float (get_x a')) (int_of_float (get_y a'));
@@ -693,7 +693,7 @@ let visualize room =
         List.iter (fun x ->
           Thread.delay 0.3;
           remove_watchman !p scaling_factor origin;
-          draw_line ((++) !p (0.5, 0.5)) ((++) x (0.5, 0.5)) scaling_factor origin;
+          draw_line ((++) !p (0.75, 0.75)) ((++) x (0.75, 0.75)) scaling_factor origin blue;
           cast_light_around room x scaling_factor origin;
           draw_watchman x scaling_factor origin; 
           p := x;
@@ -707,7 +707,7 @@ let visualize room =
       begin
         let p1 = get_exn next_move in
         remove_watchman !p scaling_factor origin;
-        draw_line ((++) !p (0.5, 0.5)) ((++) p1 (0.5, 0.5)) scaling_factor origin;
+        draw_line ((++) !p (0.5, 0.5)) ((++) p1 (0.5, 0.5)) scaling_factor origin red;
         cast_light_around room p1 scaling_factor origin;
         draw_watchman p1 scaling_factor origin;
         p := p1;
@@ -760,7 +760,7 @@ let play_game room =
         then
           begin
             remove_watchman !p scaling_factor origin;
-            draw_line ((++) !p (0.5, 0.5)) ((++) !p1 (0.5, 0.5)) scaling_factor origin;
+            draw_line ((++) !p (0.5, 0.5)) ((++) !p1 (0.5, 0.5)) scaling_factor origin red;
             cast_light_around room !p1 scaling_factor origin;
             draw_watchman !p1 scaling_factor origin;
             p := !p1;
