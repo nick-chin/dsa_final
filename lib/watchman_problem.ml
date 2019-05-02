@@ -31,8 +31,8 @@ end = struct
 
   type 'a path =
     {
-      cost_from_start : int; (** the cost from the start to [head]. *)
-      total_cost : int; (** the total cost from the start to the goal (estimated). *)
+      cost_from_start : int; (* the cost from the start to [head]. *)
+      total_cost : int; (* the total cost from the start to the goal (estimated). *)
       head : 'a; (* can think of this as the current position? *)
       tail : 'a list; (* the rest of path from head to start *)
     }
@@ -46,10 +46,10 @@ end = struct
     let total_cost = cost_from_start + problem.cost state problem.goal in
     { cost_from_start; total_cost; tail; head = state}
 
-  (** [better p q] returns [true] if path [p] is better than path [q]. *)
+  (* [better p q] returns [true] if path [p] is better than path [q]. *)
   let better p q = p.total_cost < q.total_cost (* 'a path -> 'b path -> bool *)
 
-  (** [pickup_eq_path p l] returns [Some (q, l')] where [q] is the path that
+  (* [pickup_eq_path p l] returns [Some (q, l')] where [q] is the path that
       indicates the same position as [p] and [l] is a list excluding [q]. *)
   let pickup_eq_path p l = (* 'a path -> 'a path list -> ('a path * 'a path list) option *)
     match List.partition (fun q -> p.head = q.head) l with
@@ -57,7 +57,7 @@ end = struct
     | [q], l' -> Some (q, l')
     | _ -> raise (Failure "duplicated paths in open/close list")
 
-  (** [trace_next_states problem open_list close_list path] traces the next
+  (* [trace_next_states problem open_list close_list path] traces the next
       states of [path.head] and return [(open_list', close_list')] where [open_list'] and [close_list']
       are respectively an open list and a close list after all of the next
       states are traced. *)
@@ -774,10 +774,6 @@ let play_game room =
       end
     else
       let score = List.length !path in
-      (* let Point (cx, cy) = get_center room in
-      let (x, y) = (int_of_float (cx -. scaling_factor), (int_of_float cy)) in
-      moveto x y;
-       *)
       set_text_size 12;
       set_color blue;
       draw_string ("GAME FINISHED. SCORE: "^(string_of_int score));
