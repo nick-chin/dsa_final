@@ -161,19 +161,19 @@ let addedges (lst: (int * int) array) g =
   for i = 0 to len -1  do
     add_edge g (fst (lst.(i))) (snd (lst.(i)));
   done
-
+  
+  
 let ensure_reachability graph n root =
   let max = n - 1 in
   let all_nodes = get_nodes graph in
   List.iter (fun x -> if x = root then () else
                 (begin
-                  while not (is_reachable graph root x) do
-                    (*let an_edge = (Random.int max, Random.int max) in
-                      add_edge graph (fst (an_edge)) (snd (an_edge));*)
+                  if not (is_reachable graph root x) then 
+                  begin
                     let an_edge = (root, Random.int max) in
                     add_edge graph (fst (an_edge)) (snd (an_edge));
                     add_edge graph (snd (an_edge)) x;
-                  done;
+                  end;
                 end)) all_nodes
 
 
