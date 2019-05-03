@@ -163,18 +163,13 @@ let addedges (lst: (int * int) array) g =
   done
   
   
-let ensure_reachability graph n root =
-  let max = n - 1 in
+let ensure_reachability graph root =
   let all_nodes = get_nodes graph in
   List.iter (fun x -> if x = root then () else
-                (begin
-                  if not (is_reachable graph root x) then 
-                  begin
-                    let an_edge = (root, Random.int max) in
-                    add_edge graph (fst (an_edge)) (snd (an_edge));
-                    add_edge graph (snd (an_edge)) x;
-                  end;
-                end)) all_nodes
+                begin
+                  if not (is_reachable graph root x)
+                  then add_edge graph root x
+                end) all_nodes
 
 
 (*Main Function: Procedure to generate random rooted graph*)
