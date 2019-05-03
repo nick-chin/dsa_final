@@ -182,7 +182,7 @@ let gen_random_rooted_graph n =
   let edges = gen_edges n in
   addnodes nodes g;
   addedges edges g;
-  ensure_reachability g n root;
+  ensure_reachability g root;
   (root, g)
 
 
